@@ -1,3 +1,4 @@
+
 #pragma once
 
 #include "node.h"
@@ -11,8 +12,8 @@ private:
 
 public:
     linked_list();
-    linked_list(const linked_list<t>& other); //tạo danh sách mới bằng cách sao chép dữ liệu từ danh sách khác.
-    linked_list<t>& operator=(const linked_list<t>& other); //sao chép dữ liệu khi gán một danh sách có sẵn cho danh sách khác.
+    linked_list(const linked_list<t>& other); //táº¡o danh sÃ¡ch má»›i báº±ng cÃ¡ch sao chÃ©p dá»¯ liá»‡u tá»« danh sÃ¡ch khÃ¡c.
+    linked_list<t>& operator=(const linked_list<t>& other); //sao chÃ©p dá»¯ liá»‡u khi gÃ¡n má»™t danh sÃ¡ch cÃ³ sáºµn cho danh sÃ¡ch khÃ¡c.
     ~linked_list();
 
     bool empty() const;

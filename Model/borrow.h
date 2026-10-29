@@ -1,3 +1,4 @@
+
 #pragma once
 #include <string>
 #include <iostream>
@@ -28,7 +29,7 @@ public:
     void set_due_date(date due_date);
     void set_status(std::string status);
 
-    // Override hàm thuần ảo từ library_entity
+    // Override hÃ m thuáº§n áº£o tá»« library_entity
     std::string get_entity_type() const override;
     std::string to_record_string() const override;
 

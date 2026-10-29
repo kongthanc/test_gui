@@ -1,3 +1,4 @@
+
 #pragma once
 #include <string>
 #include <iostream>
@@ -9,7 +10,7 @@ private:
     std::string name;
     std::string password;
     std::string role;
-    role_permission* permission_strategy; // Con trỏ Đa hình (Strategy Pattern)
+    role_permission* permission_strategy; // Con trá» Äa hÃ¬nh (Strategy Pattern)
 
     void update_permission_strategy();
 
@@ -28,12 +29,12 @@ public:
     void set_password(std::string password);
     void set_role(std::string role);
 
-    // Các hành vi Đa hình (Polymorphic Dispatch)
+    // CÃ¡c hÃ nh vi Äa hÃ¬nh (Polymorphic Dispatch)
     void display_role_menu() const;
     int get_max_menu_option() const;
     bool has_user_management_privilege() const;
 
-    // Ghi đè (Override) hàm thuần ảo từ lớp trừu tượng library_entity
+    // Ghi Ä‘Ã¨ (Override) hÃ m thuáº§n áº£o tá»« lá»›p trá»«u tÆ°á»£ng library_entity
     std::string get_entity_type() const override;
     std::string to_record_string() const override;
 

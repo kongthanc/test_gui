@@ -1,6 +1,7 @@
+
 #include"hash_table.h"
 
-// --- Khởi tạo Node phụ ---
+// --- Khá»Ÿi táº¡o Node phá»¥ ---
 template <typename t>
 hash_table<t>::hash_node::hash_node(std::string k, node<t>* addr) {
     key = k;
@@ -8,7 +9,7 @@ hash_table<t>::hash_node::hash_node(std::string k, node<t>* addr) {
     next = nullptr;
 }
 
-// --- Khởi tạo Bảng băm ---
+// --- Khá»Ÿi táº¡o Báº£ng bÄƒm ---
 template <typename t>
 hash_table<t>::hash_table(int cap) {
     capacity = cap;
@@ -17,7 +18,7 @@ hash_table<t>::hash_table(int cap) {
     for (int i = 0; i < capacity; i++) table[i] = nullptr;
 }
 
-// --- Hủy Bảng băm ---
+// --- Há»§y Báº£ng bÄƒm ---
 template <typename t>
 hash_table<t>::~hash_table() {
     for (int i = 0; i < capacity; i++) {
@@ -31,7 +32,7 @@ hash_table<t>::~hash_table() {
     delete[] table;
 }
 
-// --- Thuật toán Băm ---
+// --- Thuáº­t toÃ¡n BÄƒm ---
 template <typename t>
 int hash_table<t>::hash_function(std::string key) const {
     long long hash_val = 0;
@@ -45,7 +46,7 @@ int hash_table<t>::hash_function(std::string key) const {
     return (int)((hash_val % capacity + capacity) % capacity);
 }
 
-// --- Thuật toán Giãn nở tự động ---
+// --- Thuáº­t toÃ¡n GiÃ£n ná»Ÿ tá»± Ä‘á»™ng ---
 template <typename t>
 void hash_table<t>::rehash() {
     int old_capacity = capacity;
@@ -69,7 +70,7 @@ void hash_table<t>::rehash() {
     delete[] old_table;
 }
 
-// --- Thêm Node ---
+// --- ThÃªm Node ---
 template <typename t>
 void hash_table<t>::insert(std::string key, node<t>* address) {
     if ((float)(current_size + 1) / capacity > MAX_LOAD_FACTOR) {
@@ -85,7 +86,7 @@ void hash_table<t>::insert(std::string key, node<t>* address) {
     current_size++;
 }
 
-// --- Tìm kiếm Node ---
+// --- TÃ¬m kiáº¿m Node ---
 template <typename t>
 node<t>* hash_table<t>::find(std::string key) const {
     int index = hash_function(key);
@@ -100,7 +101,7 @@ node<t>* hash_table<t>::find(std::string key) const {
     return nullptr;
 }
 
-// --- Xóa Node ---
+// --- XÃ³a Node ---
 template <typename t>
 void hash_table<t>::remove(std::string key) {
     int index = hash_function(key);

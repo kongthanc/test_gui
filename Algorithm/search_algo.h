@@ -1,9 +1,10 @@
+
 #pragma once
 #include <string>
 
 class search_algo {
 public:
-    // 1. Chuyển chuỗi về in thường (Hỗ trợ tìm kiếm không phân biệt Hoa/Thường)
+    // 1. Chuyá»ƒn chuá»—i vá» in thÆ°á»ng (Há»— trá»£ tÃ¬m kiáº¿m khÃ´ng phÃ¢n biá»‡t Hoa/ThÆ°á»ng)
     static std::string to_lower(std::string str) {
         std::string result = str;
         for (int i = 0; i < result.length(); i++) {
@@ -14,7 +15,7 @@ public:
         return result;
     }
 
-    // 2. Gọt bỏ khoảng trắng thừa ở 2 đầu do người dùng gõ nhầm
+    // 2. Gá»t bá» khoáº£ng tráº¯ng thá»«a á»Ÿ 2 Ä‘áº§u do ngÆ°á»i dÃ¹ng gÃµ nháº§m
     static std::string trim(std::string str) {
         if (str.empty()) return str;
         
@@ -28,7 +29,7 @@ public:
         return str.substr(start, end - start + 1);
     }
 
-    // 3. Thuật toán tìm chuỗi con (Trả về true nếu pattern nằm trong text)
+    // 3. Thuáº­t toÃ¡n tÃ¬m chuá»—i con (Tráº£ vá» true náº¿u pattern náº±m trong text)
     static bool contains(std::string text, std::string pattern) {
         text = to_lower(trim(text));
         pattern = to_lower(trim(pattern));
@@ -36,7 +37,7 @@ public:
         if (pattern.empty()) return true;
         if (text.length() < pattern.length()) return false;
 
-        // Trượt dọc theo text để tìm pattern
+        // TrÆ°á»£t dá»c theo text Ä‘á»ƒ tÃ¬m pattern
         for (int i = 0; i <= text.length() - pattern.length(); i++) {
             int j;
             for (j = 0; j < pattern.length(); j++) {
@@ -44,7 +45,7 @@ public:
                     break; 
                 }
             }
-            if (j == pattern.length()) return true; // Khớp 100%
+            if (j == pattern.length()) return true; // Khá»›p 100%
         }
         return false;
     }

@@ -1,4 +1,6 @@
+
 #include "date.h"
+#include <stdexcept>
 
 date::date() {
     day = 1;
@@ -12,9 +14,7 @@ date::date(int day, int month, int year) {
     this->year = year;
 
     if (!is_valid()) {
-        this->day = 1;
-        this->month = 1;
-        this->year = 2026;
+        throw std::invalid_argument("Ngay thang nam khong hop le");
     }
 }
 
@@ -208,7 +208,7 @@ std::string date::get_day_of_week() const {
     int m = this->month;
     int y = this->year;
     
-    // Thuật toán yêu cầu tháng 1, 2 phải được tính là tháng 13, 14 của năm trước
+    // Thuáº­t toÃ¡n yÃªu cáº§u thÃ¡ng 1, 2 pháº£i Ä‘Æ°á»£c tÃ­nh lÃ  thÃ¡ng 13, 14 cá»§a nÄƒm trÆ°á»›c
     if (m < 3) {
         m += 12;
         y -= 1;
@@ -217,11 +217,11 @@ std::string date::get_day_of_week() const {
     int k = y % 100;
     int j = y / 100;
     
-    // Công thức Zeller
+    // CÃ´ng thá»©c Zeller
     int f = d + ((13 * (m + 1)) / 5) + k + (k / 4) + (j / 4) + (5 * j);
     int day_of_week = f % 7;
     
-    // Zeller trả về: 0 = Thứ 7, 1 = Chủ nhật, 2 = Thứ 2...
+    // Zeller tráº£ vá»: 0 = Thá»© 7, 1 = Chá»§ nháº­t, 2 = Thá»© 2...
     if(day_of_week == 0 ) return "thu 7";
         else if(day_of_week == 1 ) return "chu nhat";
              else if(day_of_week == 2 ) return "thu 2";

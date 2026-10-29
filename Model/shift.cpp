@@ -1,3 +1,4 @@
+
 #include "shift.h"
 
 using namespace std;
@@ -8,7 +9,7 @@ shift::shift() {
     for (int i = 0; i < 4; i++) {
         admins[i] = "";
     }
-    // shift_date sẽ tự gọi constructor mặc định của class date
+    // shift_date sáº½ tá»± gá»i constructor máº·c Ä‘á»‹nh cá»§a class date
 }
 
 shift::shift(date shift_date, string session) {
@@ -33,8 +34,8 @@ void shift::set_shift_date(date shift_date) { this->shift_date = shift_date; }
 void shift::set_session(string session) { this->session = session; }
 
 bool shift::add_admin(string admin_id) {
-    if (has_admin(admin_id)) return false; // Đã đăng kí rồi
-    if (current_count >= 4) return false;  // Đã đầy slot
+    if (has_admin(admin_id)) return false; // ÄÃ£ Ä‘Äƒng kÃ­ rá»“i
+    if (current_count >= 4) return false;  // ÄÃ£ Ä‘áº§y slot
 
     admins[current_count] = admin_id;
     current_count++;
@@ -50,9 +51,9 @@ bool shift::remove_admin(string admin_id) {
         }
     }
 
-    if (pos == -1) return false; // Không tìm thấy admin trong ca này
+    if (pos == -1) return false; // KhÃ´ng tÃ¬m tháº¥y admin trong ca nÃ y
 
-    // Dồn mảng để lấp chỗ trống
+    // Dá»“n máº£ng Ä‘á»ƒ láº¥p chá»— trá»‘ng
     for (int i = pos; i < current_count - 1; i++) {
         admins[i] = admins[i + 1];
     }
@@ -76,7 +77,7 @@ string shift::get_all_admins_string() const {
     }
     return result;
 }
-#include <sstream> // Đảm bảo có thư viện này ở đầu file hoặc trước hàm
+#include <sstream> // Äáº£m báº£o cÃ³ thÆ° viá»‡n nÃ y á»Ÿ Ä‘áº§u file hoáº·c trÆ°á»›c hÃ m
 
 std::string shift::to_record_string() const {
     std::stringstream ss;

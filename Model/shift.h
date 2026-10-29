@@ -1,13 +1,14 @@
+
 #pragma once
 #include <string>
-#include "date.h" // Nhúng class date vào để quản lí ngày thực tế
+#include "date.h" // NhÃºng class date vÃ o Ä‘á»ƒ quáº£n lÃ­ ngÃ y thá»±c táº¿
 
 class shift {
 private:
-    date shift_date;         // Ngày làm việc cụ thể
-    std::string session;     // Ca làm ("sang" hoặc "chieu")
-    std::string admins[4];   // Tối đa 4 người/ca
-    int current_count;       // Số người hiện tại đã đăng kí
+    date shift_date;         // NgÃ y lÃ m viá»‡c cá»¥ thá»ƒ
+    std::string session;     // Ca lÃ m ("sang" hoáº·c "chieu")
+    std::string admins[4];   // Tá»‘i Ä‘a 4 ngÆ°á»i/ca
+    int current_count;       // Sá»‘ ngÆ°á»i hiá»‡n táº¡i Ä‘Ã£ Ä‘Äƒng kÃ­
 
 public:
     shift();

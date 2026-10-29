@@ -1,3 +1,4 @@
+
 #pragma once
 #include <string>
 #include "node.h"
@@ -5,7 +6,7 @@
 template <typename t>
 class hash_table {
 private:
-    // Khai báo cấu trúc node phụ xử lý đụng độ
+    // Khai bÃ¡o cáº¥u trÃºc node phá»¥ xá»­ lÃ½ Ä‘á»¥ng Ä‘á»™
     struct hash_node {
         std::string key;
         node<t>* address;

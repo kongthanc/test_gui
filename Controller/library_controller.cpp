@@ -1,3 +1,4 @@
+
 #include "library_controller.h"
 
 library_controller::library_controller() 
@@ -8,15 +9,15 @@ library_controller::library_controller()
     position_file = "Data/position.txt";
     
     load_requests();
-    load_positions(); // Đọc dữ liệu vị trí sách từ file
-    check_system_overdue(); // Tự động cập nhật các phiếu quá hạn theo ngày thực tế của máy
+    load_positions(); // Äá»c dá»¯ liá»‡u vá»‹ trÃ­ sÃ¡ch tá»« file
+    check_system_overdue(); // Tá»± Ä‘á»™ng cáº­p nháº­t cÃ¡c phiáº¿u quÃ¡ háº¡n theo ngÃ y thá»±c táº¿ cá»§a mÃ¡y
 }
 
 library_controller::~library_controller() {
     save_requests();
 }
 
-// --- Quản lý File cho Hàng đợi Đăng ký sách ---
+// --- Quáº£n lÃ½ File cho HÃ ng Ä‘á»£i ÄÄƒng kÃ½ sÃ¡ch ---
 void library_controller::load_requests() {
     std::ifstream file(request_file);
     if (!file.is_open()) return;
@@ -62,7 +63,7 @@ void library_controller::save_requests() {
              << req.get_status() << "\n";
         temp_queue.push(req);
     }
-    // Khôi phục lại hàng đợi trên RAM không làm mất dữ liệu
+    // KhÃ´i phá»¥c láº¡i hÃ ng Ä‘á»£i trÃªn RAM khÃ´ng lÃ m máº¥t dá»¯ liá»‡u
     while (!temp_queue.is_empty()) {
         book_request_queue.push(temp_queue.front());
         temp_queue.pop();
@@ -70,11 +71,11 @@ void library_controller::save_requests() {
     file.close();
 }
 
-// ================= 1. PHIÊN ĐĂNG NHẬP =================
+// ================= 1. PHIÃŠN ÄÄ‚NG NHáº¬P =================
 bool library_controller::login(std::string id, std::string password) {
     current_logged_in_user = u_service.login(id, password);
     if (current_logged_in_user != nullptr) {
-        check_system_overdue(); // Mỗi lần đăng nhập tự động rà soát phiếu quá hạn
+        check_system_overdue(); // Má»—i láº§n Ä‘Äƒng nháº­p tá»± Ä‘á»™ng rÃ  soÃ¡t phiáº¿u quÃ¡ háº¡n
     }
     return (current_logged_in_user != nullptr);
 }
@@ -92,7 +93,7 @@ std::string library_controller::get_current_role() const {
     return current_logged_in_user->get_role();
 }
 
-// ================= 2. QUẢN LÝ SÁCH =================
+// ================= 2. QUáº¢N LÃ SÃCH =================
 linked_list<book> library_controller::search_books(std::string keyword) {
     return b_service.search_books(keyword);
 }
@@ -116,7 +117,7 @@ bool library_controller::add_new_book(std::string id, std::string title, std::st
 }
 
 bool library_controller::update_book_info(std::string old_id, book book_n) {
-    // Nếu đổi mã sách mà sách cũ đang có người mượn -> Không cho đổi để tránh sai lệch dữ liệu
+    // Náº¿u Ä‘á»•i mÃ£ sÃ¡ch mÃ  sÃ¡ch cÅ© Ä‘ang cÃ³ ngÆ°á»i mÆ°á»£n -> KhÃ´ng cho Ä‘á»•i Ä‘á»ƒ trÃ¡nh sai lá»‡ch dá»¯ liá»‡u
     if (old_id != book_n.get_id() && br_service.is_book_borrowed(old_id)) {
         return false;
     }
@@ -124,7 +125,7 @@ bool library_controller::update_book_info(std::string old_id, book book_n) {
 }
 
 bool library_controller::delete_book(std::string id) {
-    // RÀNG BUỘC TOÀN VẸN: Không cho xóa sách đang có người mượn hoặc quá hạn chưa trả
+    // RÃ€NG BUá»˜C TOÃ€N Váº¸N: KhÃ´ng cho xÃ³a sÃ¡ch Ä‘ang cÃ³ ngÆ°á»i mÆ°á»£n hoáº·c quÃ¡ háº¡n chÆ°a tráº£
     if (br_service.is_book_borrowed(id)) {
         return false; 
     }
@@ -139,12 +140,12 @@ void library_controller::sort_books(bool (*cmp)(book, book)) {
     b_service.sort_books(cmp);
 }
 
-// Lọc phiếu mượn
+// Lá»c phiáº¿u mÆ°á»£n
 linked_list<borrow> library_controller::filter_borrows_by_date(date start_date, date end_date) {
     return br_service.filter_borrows_by_date(start_date, end_date);
 }
 
-// ================= 3. QUẢN LÝ MƯỢN - TRẢ =================
+// ================= 3. QUáº¢N LÃ MÆ¯á»¢N - TRáº¢ =================
 bool library_controller::borrow_book(std::string borrow_id, std::string book_id, std::string user_id, date borrow_date, date due_date) {
     return br_service.create_borrow_ticket(borrow_id, book_id, user_id, borrow_date, due_date, b_service, u_service);
 }
@@ -168,11 +169,15 @@ linked_list<borrow> library_controller::get_my_borrows(std::string user_id, bool
 void library_controller::check_system_overdue() {
     time_t t = time(0);
     tm* now = localtime(&t);
+    if (now == nullptr) return; // Báº£o vá»‡ an toÃ n chá»‘ng crash
     date today(now->tm_mday, now->tm_mon + 1, now->tm_year + 1900);
     br_service.check_and_update_overdue(today);
 }
-
-// ================= 4. HÀNG ĐỢI ĐĂNG KÝ SÁCH (USER QUEUE) =================
+bool library_controller::has_overdue_borrows(
+    std::string user_id) const {
+    return br_service.has_overdue_borrows(user_id);
+}
+// ================= 4. HÃ€NG Äá»¢I ÄÄ‚NG KÃ SÃCH (USER QUEUE) =================
 bool library_controller::is_request_id_in_queue(std::string req_id) {
     queue<borrow> temp_queue;
     bool found = false;
@@ -192,32 +197,32 @@ bool library_controller::is_request_id_in_queue(std::string req_id) {
 }
 
 bool library_controller::register_book_request(std::string req_id, std::string book_id, std::string user_id, date b_date, date due_date) {
-    // 1. Kiểm tra sách có tồn tại không
+    // 1. Kiá»ƒm tra sÃ¡ch cÃ³ tá»“n táº¡i khÃ´ng
     node<book>* b_node = b_service.get_book_by_id(book_id);
     if (b_node == nullptr) return false;
 
-    // 2. Kiểm tra sách còn tồn kho > 0
+    // 2. Kiá»ƒm tra sÃ¡ch cÃ²n tá»“n kho > 0
     if (b_node->get_data().get_quantity() <= 0) return false;
 
-    // 3. Kiểm tra ngày hẹn trả hợp lệ
+    // 3. Kiá»ƒm tra ngÃ y háº¹n tráº£ há»£p lá»‡
     if (due_date < b_date) return false;
 
-    // 4. Kiểm tra trùng mã với phiếu mượn đã có trong hệ thống
+    // 4. Kiá»ƒm tra trÃ¹ng mÃ£ vá»›i phiáº¿u mÆ°á»£n Ä‘Ã£ cÃ³ trong há»‡ thá»‘ng
     if (br_service.get_borrow_by_id(req_id) != nullptr) return false;
 
-    // 5. Kiểm tra trùng mã trong hàng đợi đang chờ duyệt
+    // 5. Kiá»ƒm tra trÃ¹ng mÃ£ trong hÃ ng Ä‘á»£i Ä‘ang chá» duyá»‡t
     if (is_request_id_in_queue(req_id)) return false;
 
-    // 6. Kiểm tra bạn đọc này có đang mượn chính cuốn này chưa trả không
+    // 6. Kiá»ƒm tra báº¡n Ä‘á»c nÃ y cÃ³ Ä‘ang mÆ°á»£n chÃ­nh cuá»‘n nÃ y chÆ°a tráº£ khÃ´ng
     if (br_service.is_user_borrowing_book(user_id, book_id)) return false;
 
-    // 7. Kiểm tra bạn đọc có sách nợ quá hạn chưa trả không
+    // 7. Kiá»ƒm tra báº¡n Ä‘á»c cÃ³ sÃ¡ch ná»£ quÃ¡ háº¡n chÆ°a tráº£ khÃ´ng
     if (br_service.has_overdue_borrows(user_id)) return false;
 
     borrow ticket(req_id, book_id, user_id, b_date, due_date, "Cho duyet");
     book_request_queue.push(ticket);
 
-    // Lưu ngay xuống file request.txt
+    // LÆ°u ngay xuá»‘ng file request.txt
     save_requests();
     return true;
 }
@@ -234,19 +239,19 @@ bool library_controller::approve_next_request() {
     if (book_request_queue.is_empty()) return false;
     borrow req = book_request_queue.front();
 
-    // Tạo phiếu mượn chính thức và trừ số lượng trong kho
+    // Táº¡o phiáº¿u mÆ°á»£n chÃ­nh thá»©c vÃ  trá»« sá»‘ lÆ°á»£ng trong kho
     if (borrow_book(req.get_id(), req.get_book_id(), req.get_user_id(), req.get_borrow_date(), req.get_due_date())) {
         book_request_queue.pop();
-        save_requests(); // Cập nhật ngay file request.txt
+        save_requests(); // Cáº­p nháº­t ngay file request.txt
         return true;
     }
-    return false; // Hết sách hoặc trùng mã phiếu
+    return false; // Háº¿t sÃ¡ch hoáº·c trÃ¹ng mÃ£ phiáº¿u
 }
 
 bool library_controller::reject_next_request() {
     if (book_request_queue.is_empty()) return false;
     book_request_queue.pop();
-    save_requests(); // Cập nhật ngay file request.txt
+    save_requests(); // Cáº­p nháº­t ngay file request.txt
     return true;
 }
 
@@ -254,7 +259,7 @@ int library_controller::get_pending_request_count() const {
     return book_request_queue.get_size();
 }
 
-// ================= 5. CA TRỰC =================
+// ================= 5. CA TRá»°C =================
 bool library_controller::register_shift(date d, std::string session, std::string admin_id) {
     return s_service.register_shift(d, session, admin_id, u_service);
 }
@@ -278,8 +283,11 @@ bool library_controller::delete_shift(date d, std::string session) {
 void library_controller::show_all_shifts() {
     s_service.display_all();
 }
+linked_list<shift> library_controller::get_all_shifts() {
+    return s_service.get_all_shifts();
+}
 
-// ================= 6. QUẢN LÝ NGƯỜI DÙNG (USER CRUD - MANAGER) =================
+// ================= 6. QUáº¢N LÃ NGÆ¯á»œI DÃ™NG (USER CRUD - MANAGER) =================
 bool library_controller::add_new_user(std::string id, std::string name, std::string password, std::string role) {
     user new_u(id, name, password, role);
     return u_service.add_user(new_u);
@@ -290,15 +298,15 @@ bool library_controller::update_user_info(std::string old_id, user updated_user)
 }
 
 bool library_controller::delete_user(std::string id) {
-    // 1. Chặn tự xóa tài khoản đang đăng nhập
+    // 1. Cháº·n tá»± xÃ³a tÃ i khoáº£n Ä‘ang Ä‘Äƒng nháº­p
     if (current_logged_in_user != nullptr && current_logged_in_user->get_id() == id) {
         return false; 
     }
-    // 2. Chặn xóa tài khoản đang có sách mượn chưa trả
+    // 2. Cháº·n xÃ³a tÃ i khoáº£n Ä‘ang cÃ³ sÃ¡ch mÆ°á»£n chÆ°a tráº£
     if (br_service.has_active_borrows(id)) {
         return false;
     }
-    // 3. Chặn xóa tài khoản Admin đang có lịch trực
+    // 3. Cháº·n xÃ³a tÃ i khoáº£n Admin Ä‘ang cÃ³ lá»‹ch trá»±c
     if (s_service.has_shifts(id)) {
         return false;
     }
@@ -310,7 +318,7 @@ node<user>* library_controller::get_user_by_id(std::string id) {
     return u_service.get_user_by_id(id);
 }
 
-// --- Đọc dữ liệu từ file position.txt (Định dạng: b001;it;a1) ---
+// --- Äá»c dá»¯ liá»‡u tá»« file position.txt (Äá»‹nh dáº¡ng: b001;it;a1) ---
 void library_controller::load_positions() {
     std::ifstream file(position_file);
     if (!file.is_open()) {
@@ -337,7 +345,7 @@ void library_controller::load_positions() {
     file.close();
 }
 
-// --- Tìm vị trí kệ theo mã sách ---
+// --- TÃ¬m vá»‹ trÃ­ ká»‡ theo mÃ£ sÃ¡ch ---
 std::string library_controller::get_book_shelf(std::string book_id) {
     std::string target_id = search_algo::to_lower(search_algo::trim(book_id));
     node<book_location>* curr = position_list.get_head();
@@ -349,7 +357,4 @@ std::string library_controller::get_book_shelf(std::string book_id) {
         curr = curr->get_next();
     }
     return "Chua xep ke";
-}
-linked_list<shift> library_controller::get_all_shifts() {
-    return s_service.get_all_shifts();
 }

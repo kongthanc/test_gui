@@ -1,3 +1,4 @@
+
 #include "book.h"
 
 using namespace std;
@@ -88,4 +89,8 @@ ostream& operator<<(ostream& out, const book& b) {
         << "So luong: " << b.quantity << '\n'
         << "Nam xuat ban: " << b.year;
     return out;
+}
+
+bool book::operator==(const book& other) const {
+    return this->id == other.id;
 }

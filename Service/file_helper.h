@@ -1,3 +1,4 @@
+
 #pragma once
 #include <fstream>
 #include <string>
@@ -5,7 +6,7 @@
 
 class file_helper {
 public:
-    // Đơn nhiệm GHI: Chỉ làm duy nhất 1 việc là ghi danh sách ra file
+    // ÄÆ¡n nhiá»‡m GHI: Chá»‰ lÃ m duy nháº¥t 1 viá»‡c lÃ  ghi danh sÃ¡ch ra file
     template <typename T>
     static bool save_list_to_file(const std::string& filename, const linked_list<T>& list) {
         std::ofstream file(filename, std::ios::trunc);
@@ -13,7 +14,7 @@ public:
 
         node<T>* curr = list.get_head();
         while (curr != nullptr) {
-            // Gọi hàm to_record_string() của chính thực thể (Kế thừa từ library_entity)
+            // Gá»i hÃ m to_record_string() cá»§a chÃ­nh thá»±c thá»ƒ (Káº¿ thá»«a tá»« library_entity)
             file << curr->get_data().to_record_string() << "\n";
             curr = curr->get_next();
         }

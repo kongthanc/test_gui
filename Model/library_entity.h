@@ -1,7 +1,8 @@
+
 #pragma once
 #include <string>
 
-// LỚP TRỪU TƯỢNG CƠ SỞ CHO MỌI THỰC THỂ TRONG THƯ VIỆN (ABSTRACTION)
+// Lá»šP TRá»ªU TÆ¯á»¢NG CÆ  Sá»ž CHO Má»ŒI THá»°C THá»‚ TRONG THÆ¯ VIá»†N (ABSTRACTION)
 class library_entity {
 protected:
     std::string id;
@@ -14,7 +15,7 @@ public:
     std::string get_id() const { return id; }
     void set_id(std::string id) { this->id = id; }  
 
-    // Các phương thức thuần ảo (Pure Virtual Functions) bắt buộc lớp con Override
+    // CÃ¡c phÆ°Æ¡ng thá»©c thuáº§n áº£o (Pure Virtual Functions) báº¯t buá»™c lá»›p con Override
     virtual std::string get_entity_type() const = 0;
     virtual std::string to_record_string() const = 0;
 };

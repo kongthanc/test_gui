@@ -1,20 +1,21 @@
+
 #pragma once
 #include <string>
 #include <iostream>
 
-// INTERFACE TRỪU TƯỢNG CHO PHÂN QUYỀN (STRATEGY PATTERN)
+// INTERFACE TRá»ªU TÆ¯á»¢NG CHO PHÃ‚N QUYá»€N (STRATEGY PATTERN)
 class role_permission {
 public:
     virtual ~role_permission() {}
 
-    // Các hàm thuần ảo đa hình
+    // CÃ¡c hÃ m thuáº§n áº£o Ä‘a hÃ¬nh
     virtual std::string get_role_name() const = 0;
     virtual int get_max_menu_choice() const = 0;
     virtual bool can_manage_users() const = 0;
     virtual void show_menu(const std::string& user_name) const = 0;
 };
 
-// 1. KẾ THỪA: Quyền Manager (Toàn quyền)
+// 1. Káº¾ THá»ªA: Quyá»n Manager (ToÃ n quyá»n)
 class manager_permission : public role_permission {
 public:
     std::string get_role_name() const override { return "manager"; }
@@ -49,7 +50,7 @@ public:
     }
 };
 
-// 2. KẾ THỪA: Quyền Admin (Quản trị viên)
+// 2. Káº¾ THá»ªA: Quyá»n Admin (Quáº£n trá»‹ viÃªn)
 class admin_permission : public role_permission {
 public:
     std::string get_role_name() const override { return "admin"; }
@@ -80,7 +81,7 @@ public:
     }
 };
 
-// 3. KẾ THỪA: Quyền Độc giả (User)
+// 3. Káº¾ THá»ªA: Quyá»n Äá»™c giáº£ (User)
 class reader_permission : public role_permission {
 public:
     std::string get_role_name() const override { return "user"; }
@@ -99,7 +100,7 @@ public:
     }
 };
 
-// FACTORY METHOD PATTERN: Khởi tạo đối tượng quyền hạn tương ứng
+// FACTORY METHOD PATTERN: Khá»Ÿi táº¡o Ä‘á»‘i tÆ°á»£ng quyá»n háº¡n tÆ°Æ¡ng á»©ng
 class permission_factory {
 public:
     static role_permission* create(const std::string& role_str) {

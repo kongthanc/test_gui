@@ -1,3 +1,4 @@
+
 #include "linked_list.h"
 
 template <typename t>
@@ -201,7 +202,7 @@ void linked_list<t>::clear() {
     while (!empty())
         pop_front();
 }
-// --- Cập nhật lại head, tail và size sau khi sắp xếp (Merge Sort) ---
+// --- Cáº­p nháº­t láº¡i head, tail vÃ  size sau khi sáº¯p xáº¿p (Merge Sort) ---
 
 template <typename t>
 void linked_list<t>::update_after_sort(node<t>* new_head) {
@@ -227,7 +228,7 @@ void linked_list<t>::update_after_sort(node<t>* new_head) {
 }
 
 
-// --- Xóa một node bất kỳ khi đã có địa chỉ đích ---
+// --- XÃ³a má»™t node báº¥t ká»³ khi Ä‘Ã£ cÃ³ Ä‘á»‹a chá»‰ Ä‘Ã­ch ---
 template <typename t>
 void linked_list<t>::remove_node(node<t>* target) {
     if (target == nullptr || empty()) return;
@@ -240,13 +241,13 @@ void linked_list<t>::remove_node(node<t>* target) {
     size--;
 }
 
-// --- Cập nhật con trỏ head ---
+// --- Cáº­p nháº­t con trá» head ---
 template <typename t>
 void linked_list<t>::set_head(node<t>* new_head) {
     this->head = new_head;
 }
 
-// --- Cập nhật con trỏ tail ---
+// --- Cáº­p nháº­t con trá» tail ---
 template <typename t>
 void linked_list<t>::set_tail(node<t>* new_tail) {
     this->tail = new_tail;

@@ -1,30 +1,31 @@
+
 #pragma once
-#include "linked_list.h" // Tận dụng lại chính DSLK đôi bạn đã code
+#include "linked_list.h" // Táº­n dá»¥ng láº¡i chÃ­nh DSLK Ä‘Ã´i báº¡n Ä‘Ã£ code
 
 template <typename t>
 class graph {
 private:
-    int capacity;                 // Sức chứa tối đa của đồ thị
-    int num_vertices;             // Số lượng đỉnh hiện tại
-    t* vertices;                  // Mảng lưu dữ liệu các đỉnh (vd: mã sách, đối tượng book)
-    linked_list<int>* adj_list;   // Mảng các DSLK, mỗi DSLK lưu chỉ số (index) của các đỉnh kề
+    int capacity;                 // Sá»©c chá»©a tá»‘i Ä‘a cá»§a Ä‘á»“ thá»‹
+    int num_vertices;             // Sá»‘ lÆ°á»£ng Ä‘á»‰nh hiá»‡n táº¡i
+    t* vertices;                  // Máº£ng lÆ°u dá»¯ liá»‡u cÃ¡c Ä‘á»‰nh (vd: mÃ£ sÃ¡ch, Ä‘á»‘i tÆ°á»£ng book)
+    linked_list<int>* adj_list;   // Máº£ng cÃ¡c DSLK, má»—i DSLK lÆ°u chá»‰ sá»‘ (index) cá»§a cÃ¡c Ä‘á»‰nh ká»
 
 public:
     graph(int cap = 100);
     ~graph();
 
-    // Thao tác xây dựng đồ thị
+    // Thao tÃ¡c xÃ¢y dá»±ng Ä‘á»“ thá»‹
     bool add_vertex(t data);
     bool add_edge(int src_index, int dest_index, bool is_directed = false);
 
-    // Truy xuất thông tin
+    // Truy xuáº¥t thÃ´ng tin
     int get_num_vertices() const;
     t get_vertex_data(int index) const;
     
-   // Lấy ra danh sách các đỉnh kề của một đỉnh
+   // Láº¥y ra danh sÃ¡ch cÃ¡c Ä‘á»‰nh ká» cá»§a má»™t Ä‘á»‰nh
     linked_list<int>& get_adj_list(int index) const; 
 
-    // CHÈN VÀO ĐÂY:
+    // CHÃˆN VÃ€O ÄÃ‚Y:
     linked_list<t> get_neighbors(t vertex_data) const;
 
     void clear();

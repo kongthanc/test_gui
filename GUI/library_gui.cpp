@@ -479,15 +479,17 @@ void library_gui::draw_book_delete() {
     draw_input({360, 220, 420, 46}, "Ma sach can xoa", field_a, sizeof(field_a));
 
     if (draw_button({460, 315, 200, 48}, "Xoa sach", RED)) {
-        if (is_blank(field_a)) {
-            set_message("Nhap ma sach can xoa.", true);
-        } else if (controller.delete_book(field_a)) {
-            set_message("Da xoa sach.");
-            clear_fields();
-        } else {
-            set_message("Khong tim thay ma sach.", true);
-        }
+    if (is_blank(field_a)) {
+        set_message("Nhap ma sach can xoa.", true);
+    } else if (controller.get_book_by_id(field_a) == nullptr) {
+        set_message("Khong tim thay ma sach.", true);
+    } else if (controller.delete_book(field_a)) {
+        set_message("Da xoa sach.");
+        clear_fields();
+    } else {
+        set_message("Sach dang co nguoi muon, khong the xoa.", true);
     }
+}
 }
 
 void library_gui::draw_borrows() {
@@ -533,16 +535,49 @@ void library_gui::draw_borrow_create() {
             !read_integer(field_e, duration, 1, 30) ||
             (duration != 7 && duration != 14 && duration != 30)) {
             set_message("Kiem tra thong tin, ngay va thoi han muon.", true);
-        } else {
-            date due_date = borrow_date.add_days(duration);
-            if (controller.borrow_book(field_a, field_b, field_c,
-                                       borrow_date, due_date)) {
-                set_message(TextFormat("Da tao phieu. Han tra: %d/%d/%d",
-                                       due_date.get_day(), due_date.get_month(),
-                                       due_date.get_year()));
-                clear_fields();
-            } else {
-                set_message("Tao phieu that bai: kiem tra ma, ngay va ton kho.", true);
+        }
+        else
+        {
+            std::string borrow_id = field_a;
+            std::string book_id = field_b;
+            std::string user_id = field_c;
+
+            if (controller.get_user_by_id(user_id) == nullptr)
+            {
+                set_message("Khong tim thay ma doc gia.", true);
+            }
+            else if (controller.has_overdue_borrows(user_id))
+            {
+                set_message(
+                    "Doc gia con sach qua han chua tra, khong the muon.",
+                    true);
+            }
+            else if (controller.get_book_by_id(book_id) == nullptr)
+            {
+                set_message("Khong tim thay ma sach.", true);
+            }
+            else
+            {
+                date due_date = borrow_date.add_days(duration);
+
+                if (controller.borrow_book(
+                        borrow_id, book_id, user_id,
+                        borrow_date, due_date))
+                {
+                    set_message(TextFormat(
+                        "Da tao phieu. Han tra: %d/%d/%d",
+                        due_date.get_day(),
+                        due_date.get_month(),
+                        due_date.get_year()));
+                    clear_fields();
+                }
+                else
+                {
+                    set_message(
+                        "Tao phieu that bai. Kiem tra ma phieu, "
+                        "so luong sach hoac thong tin muon.",
+                        true);
+                }
             }
         }
     }
@@ -974,15 +1009,48 @@ void library_gui::draw_user_request() {
             !read_integer(field_d, duration, 1, 30) ||
             (duration != 7 && duration != 14 && duration != 30)) {
             set_message("Kiem tra thong tin, ngay va thoi han muon.", true);
-        } else {
-            date due_date = borrow_date.add_days(duration);
-            if (controller.register_book_request(
-                    field_a, field_b, controller.get_current_user()->get_id(),
-                    borrow_date, due_date)) {
-                set_message("Da dua yeu cau vao hang doi.");
-                clear_fields();
-            } else {
-                set_message("Ma sach khong ton tai.", true);
+        }
+        else
+        {
+            user *current_user = controller.get_current_user();
+
+            if (current_user == nullptr)
+            {
+                set_message("Vui long dang nhap lai.", true);
+            }
+            else if (controller.has_overdue_borrows(
+                         current_user->get_id()))
+            {
+                set_message(
+                    "Ban con sach qua han chua tra, "
+                    "khong the dang ky muon sach.",
+                    true);
+            }
+            else if (controller.get_book_by_id(field_b) == nullptr)
+            {
+                set_message("Khong tim thay ma sach.", true);
+            }
+            else
+            {
+                date due_date = borrow_date.add_days(duration);
+
+                if (controller.register_book_request(
+                        field_a,
+                        field_b,
+                        current_user->get_id(),
+                        borrow_date,
+                        due_date))
+                {
+                    set_message("Da dua yeu cau vao hang doi.");
+                    clear_fields();
+                }
+                else
+                {
+                    set_message(
+                        "Gui yeu cau that bai. Kiem tra ma yeu cau, "
+                        "so luong sach hoac lich su muon.",
+                        true);
+                }
             }
         }
     }

@@ -1,3 +1,4 @@
+
 #include "graph.h"
 
 template <typename t>
@@ -5,10 +6,10 @@ graph<t>::graph(int cap) {
     this->capacity = cap;
     this->num_vertices = 0;
     
-    // Khởi tạo mảng động chứa dữ liệu đỉnh
+    // Khá»Ÿi táº¡o máº£ng Ä‘á»™ng chá»©a dá»¯ liá»‡u Ä‘á»‰nh
     this->vertices = new t[capacity];
     
-    // Khởi tạo mảng động chứa các danh sách liên kết
+    // Khá»Ÿi táº¡o máº£ng Ä‘á»™ng chá»©a cÃ¡c danh sÃ¡ch liÃªn káº¿t
     this->adj_list = new linked_list<int>[capacity]; 
 }
 
@@ -19,7 +20,7 @@ graph<t>::~graph() {
 
 template <typename t>
 bool graph<t>::add_vertex(t data) {
-    if (num_vertices >= capacity) return false; // Đồ thị đã đầy
+    if (num_vertices >= capacity) return false; // Äá»“ thá»‹ Ä‘Ã£ Ä‘áº§y
     
     vertices[num_vertices] = data;
     num_vertices++;
@@ -28,16 +29,16 @@ bool graph<t>::add_vertex(t data) {
 
 template <typename t>
 bool graph<t>::add_edge(int src_index, int dest_index, bool is_directed) {
-    // Kiểm tra tính hợp lệ của index
+    // Kiá»ƒm tra tÃ­nh há»£p lá»‡ cá»§a index
     if (src_index < 0 || src_index >= num_vertices || 
         dest_index < 0 || dest_index >= num_vertices) {
         return false;
     }
     
-    // Dùng hàm push_back của linked_list để thêm cạnh nối
+    // DÃ¹ng hÃ m push_back cá»§a linked_list Ä‘á»ƒ thÃªm cáº¡nh ná»‘i
     adj_list[src_index].push_back(dest_index);
     
-    // Nếu là đồ thị vô hướng (mượn A có B, thì mượn B cũng có A)
+    // Náº¿u lÃ  Ä‘á»“ thá»‹ vÃ´ hÆ°á»›ng (mÆ°á»£n A cÃ³ B, thÃ¬ mÆ°á»£n B cÅ©ng cÃ³ A)
     if (!is_directed) {
         adj_list[dest_index].push_back(src_index);
     }
@@ -65,14 +66,14 @@ linked_list<t> graph<t>::get_neighbors(t vertex_data) const {
     linked_list<t> neighbors;
     int src_index = -1;
     
-    // Tìm vị trí của đỉnh trong mảng vertices
+    // TÃ¬m vá»‹ trÃ­ cá»§a Ä‘á»‰nh trong máº£ng vertices
     for (int i = 0; i < num_vertices; i++) {
         if (vertices[i] == vertex_data) {
             src_index = i;
             break;
         }
     }
-    // Lấy toàn bộ dữ liệu đỉnh kề đẩy vào danh sách kết quả
+    // Láº¥y toÃ n bá»™ dá»¯ liá»‡u Ä‘á»‰nh ká» Ä‘áº©y vÃ o danh sÃ¡ch káº¿t quáº£
     if (src_index != -1) {
         node<int>* curr = adj_list[src_index].get_head();
         while (curr != nullptr) {
@@ -91,11 +92,9 @@ void graph<t>::clear() {
         vertices = nullptr;
     }
     if (adj_list != nullptr) {
-        delete[] adj_list; // Gọi destructor của linked_list để giải phóng từng node
+        delete[] adj_list; // Gá»i destructor cá»§a linked_list Ä‘á»ƒ giáº£i phÃ³ng tá»«ng node
         adj_list = nullptr;
     }
     num_vertices = 0;
     capacity = 0;
-}
-
 }
