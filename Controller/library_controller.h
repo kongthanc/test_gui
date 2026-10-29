@@ -114,4 +114,5 @@ public:
     bool undo_borrow_action(std::string& out_message);
 
     bool has_overdue_borrows(std::string user_id) const;
+    bool has_active_borrows(std::string user_id) const;
 };

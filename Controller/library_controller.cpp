@@ -358,3 +358,8 @@ std::string library_controller::get_book_shelf(std::string book_id) {
     }
     return "Chua xep ke";
 }
+
+bool library_controller::has_active_borrows(
+    std::string user_id) const {
+    return br_service.has_active_borrows(user_id);
+}

@@ -960,11 +960,18 @@ void library_gui::draw_user_delete() {
     if (draw_button({460, 315, 210, 48}, "Xoa tai khoan", RED)) {
         if (is_blank(field_a)) {
             set_message("Nhap ma tai khoan can xoa.", true);
+        } else if (controller.get_user_by_id(field_a) == nullptr) {
+            set_message("Khong tim thay tai khoan.", true);
+        } else if (controller.has_active_borrows(field_a)) {
+            set_message(
+                "Khong the xoa tai khoan dang muon sach "
+                "hoac con sach qua han chua tra.",
+                true);
         } else if (controller.delete_user(field_a)) {
             set_message("Da xoa tai khoan.");
             clear_fields();
         } else {
-            set_message("Khong tim thay tai khoan.", true);
+            set_message("Xoa tai khoan that bai.", true);
         }
     }
 }
