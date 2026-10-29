@@ -1,0 +1,5 @@
+AD01;Nguyen Van Quan Ly;admin123;manager
+US01;Tran Thi Sinh Vien;user123;user
+US02;Le Van Hoc Sinh;123456;user
+AD02;Ngo Thi Thu;thu123;admin
+US03;Hoang Bao;password;user

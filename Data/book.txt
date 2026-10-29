@@ -1,0 +1,7 @@
+B001;Lap trinh C++ co ban;Nguyen Thanh Thuy;IT;10;2020
+B002;Cau truc du lieu va Giai thuat;Le Minh Hoang;IT;5;2015
+B003;Dac Nhan Tam;Dale Carnegie;Ky nang;15;2021
+B004;Clean Code;Robert C. Martin;IT;8;2008
+B005;Nha Gia Kim;Paulo Coelho;Tieu thuyet;12;1988
+B006;Toi thay hoa vang tren co xanh;Nguyen Nhat Anh;Tieu thuyet;6;2010
+B007;Design Patterns;Gang of Four;IT;3;2012
