@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <string>
 #include <vector>
 #include "ui_font.h"
 #include "ui_layout.h"
@@ -39,6 +40,59 @@ namespace {
         DrawText(TextFormat("Trang %d/%d", page + 1, total_pages),
                  CONTENT_X + 395, y, 19, DARKGRAY);
     }
+
+    // ---- Cac ham doi chuoi luu trong file du lieu (khong dau) sang tieng Viet co dau.
+    // ---- Chi dung de HIEN THI, du lieu goc va logic nghiep vu khong thay doi.
+    std::string display_status(const std::string& status) {
+        if (status == "Dang muon") return "Đang mượn";
+        if (status == "Da tra") return "Đã trả";
+        if (status == "Qua han") return "Quá hạn";
+        if (status == "Cho duyet") return "Chờ duyệt";
+        return status;
+    }
+
+    std::string display_session(const std::string& session) {
+        if (session == "sang") return "Sáng";
+        if (session == "chieu") return "Chiều";
+        return session;
+    }
+
+    std::string display_role(const std::string& role) {
+        if (role == "manager") return "Quản lý";
+        if (role == "admin") return "Quản trị viên";
+        if (role == "user") return "Độc giả";
+        return role;
+    }
+
+    std::string display_shelf(const std::string& shelf) {
+        if (shelf == "Chua xep ke") return "Chưa xếp kệ";
+        return shelf;
+    }
+
+    std::string format_date(const date& d) {
+        return std::to_string(d.get_day()) + "/" +
+               std::to_string(d.get_month()) + "/" +
+               std::to_string(d.get_year());
+    }
+
+    // Chap nhan "sang"/"sáng" va "chieu"/"chiều"; tra ve gia tri luu trong he thong.
+    std::string normalize_session(const char* text) {
+        std::string s = text == nullptr ? "" : text;
+        size_t start = 0;
+        while (start < s.size() && s[start] == ' ') ++start;
+        size_t end = s.size();
+        while (end > start && s[end - 1] == ' ') --end;
+        s = s.substr(start, end - start);
+
+        std::string lower;
+        for (size_t i = 0; i < s.size(); ++i) {
+            char c = s[i];
+            lower += (c >= 'A' && c <= 'Z') ? (char)(c + 32) : c;
+        }
+        if (lower == "sang" || lower == "sáng") return "sang";
+        if (lower == "chieu" || lower == "chiều") return "chieu";
+        return "";
+    }
 }
 
 library_gui::library_gui(library_controller& controller)
@@ -48,6 +102,7 @@ library_gui::library_gui(library_controller& controller)
 
 void library_gui::reset() {
     current_page = DASHBOARD;
+    history.clear();
     logout_requested = false;
     list_page = 0;
     active_field = nullptr;
@@ -55,6 +110,14 @@ void library_gui::reset() {
     message.clear();
     message_is_error = false;
     showing_related = false;
+    confirm_open = false;
+    confirm_just_opened = false;
+    input_locked = false;
+    confirm_title.clear();
+    confirm_text.clear();
+    confirm_ok_label.clear();
+    confirm_ok_color = BLUE;
+    confirm_action = nullptr;
     clear_fields();
 }
 
@@ -75,7 +138,7 @@ void library_gui::clear_fields() {
     list_page = 0;
 }
 
-void library_gui::open_page(page next_page) {
+void library_gui::switch_page(page next_page) {
     current_page = next_page;
     message.clear();
     message_is_error = false;
@@ -83,9 +146,92 @@ void library_gui::open_page(page next_page) {
     clear_fields();
 }
 
+// Di vao trang con (them/sua/xoa...): nho trang hien tai de nut "Quay lai" tro ve dung buoc truoc.
+void library_gui::open_page(page next_page) {
+    if (next_page == current_page) return;
+    history.push_back(current_page);
+    switch_page(next_page);
+}
+
+// Chon muc tu menu ben trai: bat dau mot luong moi, "Quay lai" se ve Tong quan.
+void library_gui::open_root_page(page next_page) {
+    history.clear();
+    if (next_page != DASHBOARD) history.push_back(DASHBOARD);
+    switch_page(next_page);
+}
+
+void library_gui::go_back() {
+    if (history.empty()) {
+        switch_page(DASHBOARD);
+        return;
+    }
+    page previous = history.back();
+    history.pop_back();
+    switch_page(previous);
+}
+
 void library_gui::set_message(const std::string& text, bool is_error) {
     message = text;
     message_is_error = is_error;
+}
+
+void library_gui::ask_confirm(const std::string& title, const std::string& text,
+                              const std::string& ok_label, Color ok_color,
+                              std::function<void()> action) {
+    confirm_open = true;
+    confirm_just_opened = true;   // bo qua cú click vừa mở hộp thoại
+    confirm_title = title;
+    confirm_text = text;
+    confirm_ok_label = ok_label;
+    confirm_ok_color = ok_color;
+    confirm_action = action;
+}
+
+void library_gui::draw_confirm_dialog() {
+    if (!confirm_open) return;
+
+    // Hop thoai tu xu ly nut cua no, nen mo khoa dau vao cho no.
+    // Frame vua mo thi van khoa de cu click mo hop thoai khong bi tinh la "Xac nhan".
+    input_locked = confirm_just_opened;
+    confirm_just_opened = false;
+
+    DrawRectangle(0, 0, WINDOW_W, WINDOW_H, {0, 0, 0, 130});
+
+    Rectangle box = {340, 220, 540, 290};
+    DrawRectangleRounded(box, 0.05f, 10, WHITE);
+    DrawRectangleRoundedLines(box, 0.05f, 10, DARKBLUE);
+
+    DrawText(confirm_title.c_str(), (int)box.x + 28, (int)box.y + 22, 26, DARKBLUE);
+    DrawRectangle((int)box.x + 28, (int)box.y + 60, (int)box.width - 56, 2, LIGHTGRAY);
+
+    // Tach noi dung theo dau xuong dong.
+    std::string line;
+    int line_index = 0;
+    for (size_t i = 0; i <= confirm_text.size(); ++i) {
+        if (i == confirm_text.size() || confirm_text[i] == '\n') {
+            DrawText(line.c_str(), (int)box.x + 28,
+                     (int)box.y + 78 + line_index * 30, 20, DARKGRAY);
+            line.clear();
+            ++line_index;
+        } else {
+            line += confirm_text[i];
+        }
+    }
+
+    bool cancelled = draw_button({box.x + 60, box.y + 220, 190, 48}, "Hủy", GRAY);
+    bool confirmed = draw_button({box.x + 290, box.y + 220, 190, 48},
+                                 confirm_ok_label.c_str(), confirm_ok_color);
+
+    if (confirmed) {
+        std::function<void()> action = confirm_action;
+        confirm_open = false;
+        confirm_action = nullptr;
+        if (action) action();
+    } else if (cancelled) {
+        confirm_open = false;
+        confirm_action = nullptr;
+        set_message("Đã hủy thao tác.");
+    }
 }
 
 bool library_gui::is_blank(const char* text) const {
@@ -133,15 +279,20 @@ bool library_gui::read_date(const char* text, date& value) const {
 }
 
 void library_gui::collect_text_input() {
-    if (active_field == nullptr || active_field_capacity <= 1) return;
+    if (input_locked || active_field == nullptr || active_field_capacity <= 1) return;
 
     int key = GetCharPressed();
     while (key > 0) {
-        if (key >= 32 && key <= 126) {
+        // ASCII + cac ky tu tieng Viet (Latin-1, Latin mo rong, Latin mo rong bo sung).
+        bool accepted = (key >= 32 && key <= 126) ||
+                        (key >= 0xC0 && key <= 0x1EF9);
+        if (accepted) {
+            int size = 0;
+            const char* encoded = CodepointToUTF8(key, &size);
             int length = (int)std::strlen(active_field);
-            if (length < active_field_capacity - 1) {
-                active_field[length] = (char)key;
-                active_field[length + 1] = '\0';
+            if (size > 0 && length + size < active_field_capacity) {
+                std::memcpy(active_field + length, encoded, size);
+                active_field[length + size] = '\0';
             }
         }
         key = GetCharPressed();
@@ -149,7 +300,15 @@ void library_gui::collect_text_input() {
 
     if (IsKeyPressed(KEY_BACKSPACE)) {
         int length = (int)std::strlen(active_field);
-        if (length > 0) active_field[length - 1] = '\0';
+        if (length > 0) {
+            // Xoa tron mot ky tu UTF-8 (co the gom nhieu byte).
+            --length;
+            while (length > 0 &&
+                   (((unsigned char)active_field[length]) & 0xC0) == 0x80) {
+                --length;
+            }
+            active_field[length] = '\0';
+        }
     }
 }
 
@@ -162,7 +321,8 @@ void library_gui::draw_input(Rectangle box, const char* label,
     DrawRectangleRoundedLines(box, 0.08f, 6, focused ? BLUE : LIGHTGRAY);
     DrawText(value, (int)box.x + 12, (int)box.y + 11, 20, DARKGRAY);
 
-    if (CheckCollisionPointRec(ui_layout::mouse_position(), box) &&
+    if (!input_locked &&
+        CheckCollisionPointRec(ui_layout::mouse_position(), box) &&
         IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
         active_field = value;
         active_field_capacity = capacity;
@@ -171,7 +331,7 @@ void library_gui::draw_input(Rectangle box, const char* label,
 
 bool library_gui::draw_button(Rectangle box, const char* label, Color color) {
     Vector2 mouse = ui_layout::mouse_position();
-    bool hovered = CheckCollisionPointRec(mouse, box);
+    bool hovered = !input_locked && CheckCollisionPointRec(mouse, box);
     Color fill = hovered ? Color{(unsigned char)(color.r > 25 ? color.r - 25 : 0),
                                  (unsigned char)(color.g > 25 ? color.g - 25 : 0),
                                  (unsigned char)(color.b > 25 ? color.b - 25 : 0),
@@ -195,23 +355,22 @@ void library_gui::draw_message() {
 
 void library_gui::draw_back_button() {
     if (current_page != DASHBOARD &&
-        draw_button({CONTENT_X + CONTENT_W - 150, 115, 130, 42}, "Quay lai", GRAY)) {
-        open_page(DASHBOARD);
+        draw_button({CONTENT_X + CONTENT_W - 150, 115, 130, 42}, "Quay lại", GRAY)) {
+        go_back();
     }
 }
 
 void library_gui::draw_shell(const std::string& role) {
     ClearBackground(page_background);
     DrawRectangle(0, 0, WINDOW_W, 82, DARKBLUE);
-    DrawText("PBL2 - QUAN LY THU VIEN", 28, 25, 28, WHITE);
+    DrawText("PBL2 - QUẢN LÝ THƯ VIỆN", 28, 25, 28, WHITE);
 
-    const char* role_name = "Doc gia";
-    if (role == "admin") role_name = "Quan tri vien";
-    if (role == "manager") role_name = "Quan ly";
-    DrawText(role_name, WINDOW_W - 195, 29, 22, WHITE);
+    std::string role_name = display_role(role);
+    int role_width = MeasureText(role_name.c_str(), 22);
+    DrawText(role_name.c_str(), WINDOW_W - 28 - role_width, 29, 22, WHITE);
 
     DrawRectangle(0, 82, SIDEBAR_W, WINDOW_H - 82, sidebar_background);
-    DrawText("CHUC NANG", 28, 110, 21, DARKGRAY);
+    DrawText("CHỨC NĂNG", 28, 110, 21, DARKGRAY);
     draw_panel();
 }
 
@@ -225,41 +384,41 @@ void library_gui::draw_sidebar(const std::string& role) {
 
     if (role == "manager") {
         menu = {
-            {"Tong quan", DASHBOARD},
-            {"Quan ly sach", BOOKS},
-            {"Phieu muon", BORROWS},
-            {"Yeu cau muon", REQUESTS},
-            {"Ca truc", SHIFTS},
-            {"Tinh luong", SALARY},
-            {"Nguoi dung", USERS},
-            {"Vi tri ke", SHELF}
+            {"Tổng quan", DASHBOARD},
+            {"Quản lý sách", BOOKS},
+            {"Phiếu mượn", BORROWS},
+            {"Yêu cầu mượn", REQUESTS},
+            {"Ca trực", SHIFTS},
+            {"Tính lương", SALARY},
+            {"Người dùng", USERS},
+            {"Vị trí kệ", SHELF}
         };
     } else if (role == "admin") {
         menu = {
-            {"Tong quan", DASHBOARD},
-            {"Quan ly sach", BOOKS},
-            {"Phieu muon", BORROWS},
-            {"Yeu cau muon", REQUESTS},
-            {"Loc phieu muon", BORROW_FILTER},
-            {"Ca truc cua toi", SHIFTS},
-            {"Luong cua toi", SALARY},
-            {"Vi tri ke", SHELF}
+            {"Tổng quan", DASHBOARD},
+            {"Quản lý sách", BOOKS},
+            {"Phiếu mượn", BORROWS},
+            {"Yêu cầu mượn", REQUESTS},
+            {"Lọc phiếu mượn", BORROW_FILTER},
+            {"Ca trực của tôi", SHIFTS},
+            {"Lương của tôi", SALARY},
+            {"Vị trí kệ", SHELF}
         };
     } else {
         menu = {
-            {"Tong quan", DASHBOARD},
-            {"Tim kiem sach", USER_SEARCH},
-            {"Dang ky muon", USER_REQUEST},
-            {"Vi tri ke sach", SHELF},
-            {"Sach dang muon", USER_ACTIVE_BORROWS},
-            {"Lich su muon", USER_HISTORY}
+            {"Tổng quan", DASHBOARD},
+            {"Tìm kiếm sách", USER_SEARCH},
+            {"Đăng ký mượn", USER_REQUEST},
+            {"Vị trí kệ sách", SHELF},
+            {"Sách đang mượn", USER_ACTIVE_BORROWS},
+            {"Lịch sử mượn", USER_HISTORY}
         };
     }
 
     Vector2 mouse = ui_layout::mouse_position();
     for (int i = 0; i < (int)menu.size(); ++i) {
         Rectangle item = {18, (float)(150 + i * 62), 244, 48};
-        bool hovered = CheckCollisionPointRec(mouse, item);
+        bool hovered = !input_locked && CheckCollisionPointRec(mouse, item);
         bool selected = current_page == menu[i].destination;
 
         if (selected) {
@@ -272,68 +431,71 @@ void library_gui::draw_sidebar(const std::string& role) {
                  selected ? WHITE : DARKGRAY);
 
         if (hovered && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
-            open_page(menu[i].destination);
+            open_root_page(menu[i].destination);
         }
     }
 
-    if (draw_button({28, 665, 224, 50}, "DANG XUAT", RED)) {
-        logout_requested = true;
+    if (draw_button({28, 665, 224, 50}, "ĐĂNG XUẤT", RED)) {
+        ask_confirm("Xác nhận đăng xuất",
+                    "Bạn có chắc chắn muốn đăng xuất\nkhỏi hệ thống không?",
+                    "Đăng xuất", RED,
+                    [this]() { logout_requested = true; });
     }
 }
 
 void library_gui::draw_dashboard(const std::string& role) {
-    DrawText("Tong quan", CONTENT_X + 25, 120, 30, DARKBLUE);
+    DrawText("Tổng quan", CONTENT_X + 25, 120, 30, DARKBLUE);
     draw_back_button();
 
     user* current_user = controller.get_current_user();
     std::string name = current_user == nullptr ? "" : current_user->get_name();
 
-    DrawText(TextFormat("Xin chao, %s!", name.c_str()),
+    DrawText(TextFormat("Xin chào, %s!", name.c_str()),
              CONTENT_X + 35, 195, 28, DARKBLUE);
 
     if (role == "manager") {
-        DrawText("Ban co quyen quan ly sach, phieu muon, ca truc va tai khoan.",
+        DrawText("Bạn có quyền quản lý sách, phiếu mượn, ca trực và tài khoản.",
                  CONTENT_X + 35, 250, 21, DARKGRAY);
     } else if (role == "admin") {
-        DrawText("Ban co quyen quan ly sach, phieu muon va ca truc ca nhan.",
+        DrawText("Bạn có quyền quản lý sách, phiếu mượn và ca trực cá nhân.",
                  CONTENT_X + 35, 250, 21, DARKGRAY);
     } else {
-        DrawText("Dung menu ben trai de tim sach va quan ly yeu cau muon.",
+        DrawText("Dùng menu bên trái để tìm sách và quản lý yêu cầu mượn.",
                  CONTENT_X + 35, 250, 21, DARKGRAY);
     }
 }
 
 void library_gui::draw_books(const std::string& role, bool user_search) {
-    DrawText(user_search ? "Tim kiem sach" : "Quan ly sach",
+    DrawText(user_search ? "Tìm kiếm sách" : "Quản lý sách",
              CONTENT_X + 25, 120, 30, DARKBLUE);
     draw_back_button();
 
     draw_input({CONTENT_X + 20, 185, 340, 44},
-               "Tu khoa: ten sach, tac gia hoac the loai",
+               "Từ khóa: tên sách, tác giả hoặc thể loại",
                field_a, sizeof(field_a));
-    if (draw_button({CONTENT_X + 375, 185, 95, 44}, "Tim")) {
+    if (draw_button({CONTENT_X + 375, 185, 95, 44}, "Tìm")) {
         list_page = 0;
         showing_related = false;
     }
-    if (draw_button({CONTENT_X + 485, 185, 110, 44}, "Tat ca", GRAY)) {
+    if (draw_button({CONTENT_X + 485, 185, 110, 44}, "Tất cả", GRAY)) {
         field_a[0] = '\0';
         list_page = 0;
         showing_related = false;
     }
 
     if (!user_search) {
-        if (draw_button({CONTENT_X + 615, 185, 145, 44}, "Them sach")) {
+        if (draw_button({CONTENT_X + 615, 185, 145, 44}, "Thêm sách")) {
             open_page(BOOK_ADD);
             return;
         }
     }
 
     draw_input({CONTENT_X + 20, 255, 340, 44},
-               "Ma sach de xem goi y cung the loai",
+               "Mã sách để xem gợi ý cùng thể loại",
                field_b, sizeof(field_b));
-    if (draw_button({CONTENT_X + 375, 255, 110, 44}, "Goi y", DARKGREEN)) {
+    if (draw_button({CONTENT_X + 375, 255, 110, 44}, "Gợi ý", DARKGREEN)) {
         if (controller.get_book_by_id(field_b) == nullptr) {
-            set_message("Khong tim thay ma sach de goi y.", true);
+            set_message("Không tìm thấy mã sách để gợi ý.", true);
             showing_related = false;
         } else {
             showing_related = true;
@@ -341,24 +503,24 @@ void library_gui::draw_books(const std::string& role, bool user_search) {
         }
     }
     if (!user_search) {
-        if (draw_button({CONTENT_X + 515, 255, 140, 44}, "Sua sach", ORANGE)) {
+        if (draw_button({CONTENT_X + 515, 255, 140, 44}, "Sửa sách", ORANGE)) {
             open_page(BOOK_EDIT);
             return;
         }
-        if (draw_button({CONTENT_X + 670, 255, 140, 44}, "Xoa sach", RED)) {
+        if (draw_button({CONTENT_X + 670, 255, 140, 44}, "Xóa sách", RED)) {
             open_page(BOOK_DELETE);
             return;
         }
     }
 
     linked_list<book> books;
-    std::string result_label = "Ket qua tim kiem";
+    std::string result_label = "Kết quả tìm kiếm";
     if (showing_related) {
         node<book>* selected = controller.get_book_by_id(field_b);
         if (selected != nullptr) {
             book source = selected->get_data();
             books = controller.get_related_books(source.get_category(), source.get_id());
-            result_label = "Sach goi y cung the loai: " + source.get_category();
+            result_label = "Sách gợi ý cùng thể loại: " + source.get_category();
         } else {
             showing_related = false;
             books = controller.search_books(field_a);
@@ -370,7 +532,7 @@ void library_gui::draw_books(const std::string& role, bool user_search) {
     int page_count = total == 0 ? 1 : (total + ROWS_PER_PAGE - 1) / ROWS_PER_PAGE;
     if (list_page >= page_count) list_page = page_count - 1;
 
-    const char* headers[] = {"Ma", "Ten sach", "Tac gia", "The loai", "SL", "Nam", "Ke"};
+    const char* headers[] = {"Mã", "Tên sách", "Tác giả", "Thể loại", "SL", "Năm", "Kệ"};
     const int columns[] = {330, 405, 675, 865, 1005, 1060, 1125};
     DrawText(result_label.c_str(), 325, 312, 18, DARKGRAY);
     draw_table_header(headers, columns, 7, 340);
@@ -392,17 +554,17 @@ void library_gui::draw_books(const std::string& role, bool user_search) {
         DrawText(item.get_category().c_str(), 865, y + 9, 17, DARKGRAY);
         DrawText(TextFormat("%d", item.get_quantity()), 1005, y + 9, 17, DARKGRAY);
         DrawText(TextFormat("%d", item.get_year()), 1060, y + 9, 17, DARKGRAY);
-        DrawText(controller.get_book_shelf(item.get_id()).c_str(),
+        DrawText(display_shelf(controller.get_book_shelf(item.get_id())).c_str(),
                  1125, y + 9, 17, DARKGRAY);
         current = current->get_next();
         ++row;
     }
 
     if (total == 0) {
-        DrawText("Khong tim thay sach phu hop.", 330, 405, 20, RED);
+        DrawText("Không tìm thấy sách phù hợp.", 330, 405, 20, RED);
     }
 
-    if (draw_button({CONTENT_X + 230, 620, 110, 40}, "Truoc", GRAY) &&
+    if (draw_button({CONTENT_X + 230, 620, 110, 40}, "Trước", GRAY) &&
         list_page > 0) {
         --list_page;
     }
@@ -414,260 +576,338 @@ void library_gui::draw_books(const std::string& role, bool user_search) {
 }
 
 void library_gui::draw_book_form(bool editing) {
-    DrawText(editing ? "Sua thong tin sach" : "Them sach moi",
+    DrawText(editing ? "Sửa thông tin sách" : "Thêm sách mới",
              CONTENT_X + 25, 120, 30, DARKBLUE);
     draw_back_button();
 
     if (!editing) {
-        draw_input({340, 195, 360, 44}, "Ma sach", field_a, sizeof(field_a));
-        draw_input({740, 195, 400, 44}, "Ten sach", field_b, sizeof(field_b));
-        draw_input({340, 280, 360, 44}, "Tac gia", field_c, sizeof(field_c));
-        draw_input({740, 280, 400, 44}, "The loai", field_d, sizeof(field_d));
-        draw_input({340, 365, 360, 44}, "So luong (0 - 10000)", field_e, sizeof(field_e));
-        draw_input({740, 365, 400, 44}, "Nam xuat ban", field_f, sizeof(field_f));
+        draw_input({340, 195, 360, 44}, "Mã sách", field_a, sizeof(field_a));
+        draw_input({740, 195, 400, 44}, "Tên sách", field_b, sizeof(field_b));
+        draw_input({340, 280, 360, 44}, "Tác giả", field_c, sizeof(field_c));
+        draw_input({740, 280, 400, 44}, "Thể loại", field_d, sizeof(field_d));
+        draw_input({340, 365, 360, 44}, "Số lượng (0 - 10000)", field_e, sizeof(field_e));
+        draw_input({740, 365, 400, 44}, "Năm xuất bản", field_f, sizeof(field_f));
 
-        if (draw_button({530, 470, 220, 48}, "Luu sach")) {
+        if (draw_button({530, 470, 220, 48}, "Lưu sách")) {
             int quantity = 0;
             int year = 0;
             if (is_blank(field_a) || is_blank(field_b) || is_blank(field_c) ||
                 is_blank(field_d) ||
                 !read_integer(field_e, quantity, 0, 10000) ||
                 !read_integer(field_f, year, 1000, 9999)) {
-                set_message("Nhap day du thong tin va so hop le.", true);
-            } else if (controller.add_new_book(field_a, field_b, field_c, field_d,
-                                               quantity, year)) {
-                set_message("Da them sach moi.");
-                clear_fields();
+                set_message("Nhập đầy đủ thông tin và số hợp lệ.", true);
+            } else if (controller.get_book_by_id(field_a) != nullptr) {
+                set_message("Không thêm được: mã sách đã tồn tại.", true);
             } else {
-                set_message("Khong them duoc: ma sach da ton tai.", true);
+                std::string id = field_a;
+                std::string title = field_b;
+                std::string author = field_c;
+                std::string category = field_d;
+                ask_confirm("Xác nhận thêm sách",
+                            "Thêm sách mới vào thư viện?\n"
+                            "Mã sách: " + id + "\n"
+                            "Tên sách: " + title + "\n"
+                            "Số lượng: " + std::to_string(quantity),
+                            "Thêm sách", BLUE,
+                            [this, id, title, author, category, quantity, year]() {
+                    if (controller.add_new_book(id, title, author, category,
+                                                quantity, year)) {
+                        set_message("Đã thêm sách mới.");
+                        clear_fields();
+                    } else {
+                        set_message("Không thêm được: mã sách đã tồn tại.", true);
+                    }
+                });
             }
         }
         return;
     }
 
-    draw_input({340, 195, 360, 44}, "Ma sach cu", field_a, sizeof(field_a));
-    draw_input({740, 195, 400, 44}, "Ma sach moi", field_b, sizeof(field_b));
-    draw_input({340, 280, 360, 44}, "Ten sach", field_c, sizeof(field_c));
-    draw_input({740, 280, 400, 44}, "Tac gia", field_d, sizeof(field_d));
-    draw_input({340, 365, 360, 44}, "The loai", field_e, sizeof(field_e));
-    draw_input({740, 365, 400, 44}, "So luong (0 - 10000)", field_f, sizeof(field_f));
-    draw_input({340, 450, 360, 44}, "Nam xuat ban", field_g, sizeof(field_g));
+    draw_input({340, 195, 360, 44}, "Mã sách cũ", field_a, sizeof(field_a));
+    draw_input({740, 195, 400, 44}, "Mã sách mới", field_b, sizeof(field_b));
+    draw_input({340, 280, 360, 44}, "Tên sách", field_c, sizeof(field_c));
+    draw_input({740, 280, 400, 44}, "Tác giả", field_d, sizeof(field_d));
+    draw_input({340, 365, 360, 44}, "Thể loại", field_e, sizeof(field_e));
+    draw_input({740, 365, 400, 44}, "Số lượng (0 - 10000)", field_f, sizeof(field_f));
+    draw_input({340, 450, 360, 44}, "Năm xuất bản", field_g, sizeof(field_g));
 
-    if (draw_button({530, 545, 220, 48}, "Cap nhat sach", ORANGE)) {
+    if (draw_button({530, 545, 220, 48}, "Cập nhật sách", ORANGE)) {
         int quantity = 0;
         int year = 0;
         if (is_blank(field_a) || is_blank(field_b) || is_blank(field_c) ||
             is_blank(field_d) || is_blank(field_e) ||
             !read_integer(field_f, quantity, 0, 10000) ||
             !read_integer(field_g, year, 1000, 9999)) {
-            set_message("Nhap day du thong tin va so hop le.", true);
+            set_message("Nhập đầy đủ thông tin và số hợp lệ.", true);
+        } else if (controller.get_book_by_id(field_a) == nullptr) {
+            set_message("Không tìm thấy mã sách cũ.", true);
         } else {
-            book replacement(field_b, field_c, field_d, field_e, quantity, year);
-            if (controller.update_book_info(field_a, replacement)) {
-                set_message("Da cap nhat thong tin sach.");
-                clear_fields();
-            } else {
-                set_message("Cap nhat that bai: kiem tra ma sach cu va ma sach moi.", true);
-            }
+            std::string old_id = field_a;
+            std::string new_id = field_b;
+            std::string title = field_c;
+            std::string author = field_d;
+            std::string category = field_e;
+            ask_confirm("Xác nhận cập nhật sách",
+                        "Cập nhật thông tin sách " + old_id + "?\n"
+                        "Mã sách mới: " + new_id + "\n"
+                        "Tên sách: " + title + "\n"
+                        "Số lượng: " + std::to_string(quantity),
+                        "Cập nhật", ORANGE,
+                        [this, old_id, new_id, title, author, category, quantity, year]() {
+                book replacement(new_id, title, author, category, quantity, year);
+                if (controller.update_book_info(old_id, replacement)) {
+                    set_message("Đã cập nhật thông tin sách.");
+                    clear_fields();
+                } else {
+                    set_message("Cập nhật thất bại: kiểm tra mã sách cũ và mã sách mới.", true);
+                }
+            });
         }
     }
 }
 
 void library_gui::draw_book_delete() {
-    DrawText("Xoa sach", CONTENT_X + 25, 120, 30, DARKBLUE);
+    DrawText("Xóa sách", CONTENT_X + 25, 120, 30, DARKBLUE);
     draw_back_button();
-    draw_input({360, 220, 420, 46}, "Ma sach can xoa", field_a, sizeof(field_a));
+    draw_input({360, 220, 420, 46}, "Mã sách cần xóa", field_a, sizeof(field_a));
 
-    if (draw_button({460, 315, 200, 48}, "Xoa sach", RED)) {
-    if (is_blank(field_a)) {
-        set_message("Nhap ma sach can xoa.", true);
-    } else if (controller.get_book_by_id(field_a) == nullptr) {
-        set_message("Khong tim thay ma sach.", true);
-    } else if (controller.delete_book(field_a)) {
-        set_message("Da xoa sach.");
-        clear_fields();
-    } else {
-        set_message("Sach dang co nguoi muon, khong the xoa.", true);
+    if (draw_button({460, 315, 200, 48}, "Xóa sách", RED)) {
+        if (is_blank(field_a)) {
+            set_message("Nhập mã sách cần xóa.", true);
+            return;
+        }
+        node<book>* found = controller.get_book_by_id(field_a);
+        if (found == nullptr) {
+            set_message("Không tìm thấy mã sách.", true);
+            return;
+        }
+
+        std::string id = field_a;
+        std::string title = found->get_data().get_title();
+        ask_confirm("Xác nhận xóa sách",
+                    "Bạn có chắc chắn muốn xóa sách này?\n"
+                    "Mã sách: " + id + "\n"
+                    "Tên sách: " + title,
+                    "Xóa sách", RED,
+                    [this, id]() {
+            if (controller.delete_book(id)) {
+                set_message("Đã xóa sách.");
+                clear_fields();
+            } else {
+                set_message("Sách đang có người mượn, không thể xóa.", true);
+            }
+        });
     }
-}
 }
 
 void library_gui::draw_borrows() {
-    DrawText("Quan ly phieu muon", CONTENT_X + 25, 120, 30, DARKBLUE);
+    DrawText("Quản lý phiếu mượn", CONTENT_X + 25, 120, 30, DARKBLUE);
     draw_back_button();
 
-    DrawText("Chon nghiep vu:", 340, 195, 22, DARKGRAY);
-    if (draw_button({340, 240, 210, 50}, "Lap phieu muon")) {
+    DrawText("Chọn nghiệp vụ:", 340, 195, 22, DARKGRAY);
+    if (draw_button({340, 240, 210, 50}, "Lập phiếu mượn")) {
         open_page(BORROW_CREATE);
         return;
     }
-    if (draw_button({580, 240, 200, 50}, "Xac nhan tra", ORANGE)) {
+    if (draw_button({580, 240, 200, 50}, "Xác nhận trả", ORANGE)) {
         open_page(BORROW_RETURN);
         return;
     }
-    if (draw_button({810, 240, 200, 50}, "Xoa phieu", RED)) {
+    if (draw_button({810, 240, 200, 50}, "Xóa phiếu", RED)) {
         open_page(BORROW_DELETE);
         return;
     }
 
-    DrawText("Moi phieu can co ma phieu, ma sach, ma doc gia,",
+    DrawText("Mỗi phiếu cần có mã phiếu, mã sách, mã độc giả,",
              340, 345, 21, DARKGRAY);
-    DrawText("ngay muon va thoi han 7, 14 hoac 30 ngay.",
+    DrawText("ngày mượn và thời hạn 7, 14 hoặc 30 ngày.",
              340, 380, 21, DARKGRAY);
 }
 
 void library_gui::draw_borrow_create() {
-    DrawText("Lap phieu muon sach", CONTENT_X + 25, 120, 30, DARKBLUE);
+    DrawText("Lập phiếu mượn sách", CONTENT_X + 25, 120, 30, DARKBLUE);
     draw_back_button();
 
-    draw_input({340, 195, 360, 44}, "Ma phieu", field_a, sizeof(field_a));
-    draw_input({740, 195, 360, 44}, "Ma sach", field_b, sizeof(field_b));
-    draw_input({340, 280, 360, 44}, "Ma doc gia", field_c, sizeof(field_c));
-    draw_input({740, 280, 360, 44}, "Ngay muon (DD/MM/YYYY)", field_d, sizeof(field_d));
-    draw_input({340, 365, 360, 44}, "Thoi han: 7, 14 hoac 30 ngay",
+    draw_input({340, 195, 360, 44}, "Mã phiếu", field_a, sizeof(field_a));
+    draw_input({740, 195, 360, 44}, "Mã sách", field_b, sizeof(field_b));
+    draw_input({340, 280, 360, 44}, "Mã độc giả", field_c, sizeof(field_c));
+    draw_input({740, 280, 360, 44}, "Ngày mượn (DD/MM/YYYY)", field_d, sizeof(field_d));
+    draw_input({340, 365, 360, 44}, "Thời hạn: 7, 14 hoặc 30 ngày",
                field_e, sizeof(field_e));
 
-    if (draw_button({530, 465, 210, 48}, "Tao phieu")) {
-        date borrow_date;
-        int duration = 0;
-        if (is_blank(field_a) || is_blank(field_b) || is_blank(field_c) ||
-            !read_date(field_d, borrow_date) ||
-            !read_integer(field_e, duration, 1, 30) ||
-            (duration != 7 && duration != 14 && duration != 30)) {
-            set_message("Kiem tra thong tin, ngay va thoi han muon.", true);
-        }
-        else
-        {
-            std::string borrow_id = field_a;
-            std::string book_id = field_b;
-            std::string user_id = field_c;
+    if (!draw_button({530, 465, 210, 48}, "Tạo phiếu")) return;
 
-            if (controller.get_user_by_id(user_id) == nullptr)
-            {
-                set_message("Khong tim thay ma doc gia.", true);
-            }
-            else if (controller.has_overdue_borrows(user_id))
-            {
-                set_message(
-                    "Doc gia con sach qua han chua tra, khong the muon.",
-                    true);
-            }
-            else if (controller.get_book_by_id(book_id) == nullptr)
-            {
-                set_message("Khong tim thay ma sach.", true);
-            }
-            else
-            {
-                date due_date = borrow_date.add_days(duration);
-
-                if (controller.borrow_book(
-                        borrow_id, book_id, user_id,
-                        borrow_date, due_date))
-                {
-                    set_message(TextFormat(
-                        "Da tao phieu. Han tra: %d/%d/%d",
-                        due_date.get_day(),
-                        due_date.get_month(),
-                        due_date.get_year()));
-                    clear_fields();
-                }
-                else
-                {
-                    set_message(
-                        "Tao phieu that bai. Kiem tra ma phieu, "
-                        "so luong sach hoac thong tin muon.",
-                        true);
-                }
-            }
-        }
+    date borrow_date;
+    int duration = 0;
+    if (is_blank(field_a) || is_blank(field_b) || is_blank(field_c) ||
+        !read_date(field_d, borrow_date) ||
+        !read_integer(field_e, duration, 1, 30) ||
+        (duration != 7 && duration != 14 && duration != 30)) {
+        set_message("Kiểm tra thông tin, ngày và thời hạn mượn.", true);
+        return;
     }
+
+    std::string borrow_id = field_a;
+    std::string book_id = field_b;
+    std::string user_id = field_c;
+
+    if (controller.get_user_by_id(user_id) == nullptr) {
+        set_message("Không tìm thấy mã độc giả.", true);
+        return;
+    }
+    if (controller.has_overdue_borrows(user_id)) {
+        set_message("Độc giả còn sách quá hạn chưa trả, không thể mượn.", true);
+        return;
+    }
+    node<book>* book_node = controller.get_book_by_id(book_id);
+    if (book_node == nullptr) {
+        set_message("Không tìm thấy mã sách.", true);
+        return;
+    }
+
+    std::string title = book_node->get_data().get_title();
+    date due_date = borrow_date.add_days(duration);
+    std::string due_text = format_date(due_date);
+
+    ask_confirm("Xác nhận lập phiếu mượn",
+                "Tạo phiếu mượn với thông tin sau?\n"
+                "Mã phiếu: " + borrow_id + "\n"
+                "Sách: " + book_id + " - " + title + "\n"
+                "Độc giả: " + user_id + "\n"
+                "Hạn trả: " + due_text,
+                "Tạo phiếu", BLUE,
+                [this, borrow_id, book_id, user_id, borrow_date, due_date, due_text]() {
+        if (controller.borrow_book(borrow_id, book_id, user_id,
+                                   borrow_date, due_date)) {
+            set_message("Đã tạo phiếu. Hạn trả: " + due_text);
+            clear_fields();
+        } else {
+            set_message("Tạo phiếu thất bại. Kiểm tra mã phiếu, "
+                        "số lượng sách hoặc thông tin mượn.", true);
+        }
+    });
 }
 
 void library_gui::draw_borrow_return(bool deleting) {
-    DrawText(deleting ? "Xoa phieu muon" : "Xac nhan tra sach",
+    DrawText(deleting ? "Xóa phiếu mượn" : "Xác nhận trả sách",
              CONTENT_X + 25, 120, 30, DARKBLUE);
     draw_back_button();
 
-    draw_input({360, 220, 420, 46}, "Ma phieu muon", field_a, sizeof(field_a));
-    const char* label = deleting ? "Xoa phieu" : "Xac nhan tra";
+    draw_input({360, 220, 420, 46}, "Mã phiếu mượn", field_a, sizeof(field_a));
+    const char* label = deleting ? "Xóa phiếu" : "Xác nhận trả";
     Color color = deleting ? RED : ORANGE;
 
-    if (draw_button({460, 315, 200, 48}, label, color)) {
-        if (is_blank(field_a)) {
-            set_message("Nhap ma phieu muon.", true);
-        } else if ((deleting && controller.delete_borrow(field_a)) ||
-                   (!deleting && controller.return_book(field_a))) {
-            set_message(deleting ? "Da xoa phieu muon." : "Da xac nhan tra sach.");
-            clear_fields();
-        } else if (deleting) {
-            set_message("Khong xoa duoc. Phieu phai ton tai va sach da tra.", true);
-        } else {
-            set_message("Khong tim thay phieu hoac sach da duoc tra.", true);
-        }
+    if (!draw_button({460, 315, 200, 48}, label, color)) return;
+
+    if (is_blank(field_a)) {
+        set_message("Nhập mã phiếu mượn.", true);
+        return;
+    }
+
+    std::string id = field_a;
+    if (deleting) {
+        ask_confirm("Xác nhận xóa phiếu mượn",
+                    "Bạn có chắc chắn muốn xóa phiếu mượn\n" + id + " không?",
+                    "Xóa phiếu", RED,
+                    [this, id]() {
+            if (controller.delete_borrow(id)) {
+                set_message("Đã xóa phiếu mượn.");
+                clear_fields();
+            } else {
+                set_message("Không xóa được. Phiếu phải tồn tại và sách đã trả.", true);
+            }
+        });
+    } else {
+        ask_confirm("Xác nhận trả sách",
+                    "Xác nhận độc giả đã trả sách\ncho phiếu mượn " + id + "?",
+                    "Xác nhận trả", ORANGE,
+                    [this, id]() {
+            if (controller.return_book(id)) {
+                set_message("Đã xác nhận trả sách.");
+                clear_fields();
+            } else {
+                set_message("Không tìm thấy phiếu hoặc sách đã được trả.", true);
+            }
+        });
     }
 }
 
 void library_gui::draw_requests() {
-    DrawText("Duyet yeu cau muon sach", CONTENT_X + 25, 120, 30, DARKBLUE);
+    DrawText("Duyệt yêu cầu mượn sách", CONTENT_X + 25, 120, 30, DARKBLUE);
     draw_back_button();
 
     if (!controller.has_pending_requests()) {
-        DrawText("Khong co yeu cau nao trong hang doi.", 340, 235, 22, DARKGRAY);
+        DrawText("Không có yêu cầu nào trong hàng đợi.", 340, 235, 22, DARKGRAY);
         return;
     }
 
     borrow request = controller.peek_next_request();
-    DrawText(TextFormat("So yeu cau dang cho: %d",
+    DrawText(TextFormat("Số yêu cầu đang chờ: %d",
                         controller.get_pending_request_count()),
              340, 190, 23, DARKBLUE);
-    DrawText(TextFormat("Ma phieu: %s", request.get_id().c_str()),
+    DrawText(TextFormat("Mã phiếu: %s", request.get_id().c_str()),
              360, 250, 21, DARKGRAY);
-    DrawText(TextFormat("Ma sach: %s", request.get_book_id().c_str()),
+    DrawText(TextFormat("Mã sách: %s", request.get_book_id().c_str()),
              360, 290, 21, DARKGRAY);
-    DrawText(TextFormat("Ma doc gia: %s", request.get_user_id().c_str()),
+    DrawText(TextFormat("Mã độc giả: %s", request.get_user_id().c_str()),
              360, 330, 21, DARKGRAY);
-    DrawText(TextFormat("Ngay muon: %d/%d/%d",
+    DrawText(TextFormat("Ngày mượn: %d/%d/%d",
                         request.get_borrow_date().get_day(),
                         request.get_borrow_date().get_month(),
                         request.get_borrow_date().get_year()),
              360, 370, 21, DARKGRAY);
-    DrawText(TextFormat("Han tra: %d/%d/%d",
+    DrawText(TextFormat("Hạn trả: %d/%d/%d",
                         request.get_due_date().get_day(),
                         request.get_due_date().get_month(),
                         request.get_due_date().get_year()),
              360, 410, 21, DARKGRAY);
 
-    if (draw_button({360, 485, 195, 48}, "Duyet", DARKGREEN)) {
-        if (controller.approve_next_request()) {
-            set_message("Da duyet yeu cau va tao phieu muon.");
-        } else {
-            set_message("Duyet that bai: het sach hoac trung ma phieu.", true);
-        }
+    std::string summary = "Mã phiếu: " + request.get_id() + "\n"
+                          "Mã sách: " + request.get_book_id() + "\n"
+                          "Mã độc giả: " + request.get_user_id();
+
+    if (draw_button({360, 485, 195, 48}, "Duyệt", DARKGREEN)) {
+        ask_confirm("Xác nhận duyệt yêu cầu",
+                    "Duyệt yêu cầu mượn sách này?\n" + summary,
+                    "Duyệt", DARKGREEN,
+                    [this]() {
+            if (controller.approve_next_request()) {
+                set_message("Đã duyệt yêu cầu và tạo phiếu mượn.");
+            } else {
+                set_message("Duyệt thất bại: hết sách hoặc trùng mã phiếu.", true);
+            }
+        });
+        return;
     }
-    if (draw_button({585, 485, 195, 48}, "Tu choi", RED)) {
-        controller.reject_next_request();
-        set_message("Da tu choi yeu cau dau hang doi.");
+    if (draw_button({585, 485, 195, 48}, "Từ chối", RED)) {
+        ask_confirm("Xác nhận từ chối yêu cầu",
+                    "Từ chối yêu cầu mượn sách này?\n" + summary,
+                    "Từ chối", RED,
+                    [this]() {
+            controller.reject_next_request();
+            set_message("Đã từ chối yêu cầu đầu hàng đợi.");
+        });
     }
 }
 
 void library_gui::draw_borrow_filter() {
-    DrawText("Loc phieu muon theo ngay", CONTENT_X + 25, 120, 30, DARKBLUE);
+    DrawText("Lọc phiếu mượn theo ngày", CONTENT_X + 25, 120, 30, DARKBLUE);
     draw_back_button();
 
-    draw_input({330, 185, 310, 44}, "Tu ngay (DD/MM/YYYY)", field_a, sizeof(field_a));
-    draw_input({670, 185, 310, 44}, "Den ngay (DD/MM/YYYY)", field_b, sizeof(field_b));
-    if (draw_button({1010, 185, 110, 44}, "Loc")) list_page = 0;
+    draw_input({330, 185, 310, 44}, "Từ ngày (DD/MM/YYYY)", field_a, sizeof(field_a));
+    draw_input({670, 185, 310, 44}, "Đến ngày (DD/MM/YYYY)", field_b, sizeof(field_b));
+    if (draw_button({1010, 185, 110, 44}, "Lọc")) list_page = 0;
 
     date start_date;
     date end_date;
     if (is_blank(field_a) || is_blank(field_b)) {
-        DrawText("Nhap khoang ngay de hien thi danh sach phieu muon.",
+        DrawText("Nhập khoảng ngày để hiển thị danh sách phiếu mượn.",
                  330, 275, 20, DARKGRAY);
         return;
     }
     if (!read_date(field_a, start_date) || !read_date(field_b, end_date) ||
         end_date < start_date) {
-        DrawText("Khoang ngay khong hop le.", 330, 275, 20, RED);
+        DrawText("Khoảng ngày không hợp lệ.", 330, 275, 20, RED);
         return;
     }
 
@@ -677,7 +917,7 @@ void library_gui::draw_borrow_filter() {
     int page_count = total == 0 ? 1 : (total + ROWS_PER_PAGE - 1) / ROWS_PER_PAGE;
     if (list_page >= page_count) list_page = page_count - 1;
 
-    const char* headers[] = {"Ma phieu", "Ma sach", "Ma doc gia", "Ngay muon", "Han tra", "Trang thai"};
+    const char* headers[] = {"Mã phiếu", "Mã sách", "Mã độc giả", "Ngày mượn", "Hạn trả", "Trạng thái"};
     const int columns[] = {330, 460, 595, 740, 885, 1030};
     draw_table_header(headers, columns, 6, 250);
 
@@ -702,14 +942,14 @@ void library_gui::draw_borrow_filter() {
                             item.get_due_date().get_month(),
                             item.get_due_date().get_year()),
                  885, y + 11, 17, DARKGRAY);
-        DrawText(item.get_status().c_str(), 1030, y + 11, 17, DARKGRAY);
+        DrawText(display_status(item.get_status()).c_str(), 1030, y + 11, 17, DARKGRAY);
         current = current->get_next();
         ++row;
     }
-    if (total == 0) DrawText("Khong co phieu muon trong khoang ngay nay.",
+    if (total == 0) DrawText("Không có phiếu mượn trong khoảng ngày này.",
                              330, 315, 20, RED);
 
-    if (draw_button({CONTENT_X + 230, 595, 110, 40}, "Truoc", GRAY) &&
+    if (draw_button({CONTENT_X + 230, 595, 110, 40}, "Trước", GRAY) &&
         list_page > 0) --list_page;
     if (draw_button({CONTENT_X + 550, 595, 110, 40}, "Sau", GRAY) &&
         list_page + 1 < page_count) ++list_page;
@@ -717,20 +957,20 @@ void library_gui::draw_borrow_filter() {
 }
 
 void library_gui::draw_shifts(const std::string& role) {
-    DrawText(role == "manager" ? "Quan ly ca truc" : "Ca truc cua toi",
+    DrawText(role == "manager" ? "Quản lý ca trực" : "Ca trực của tôi",
              CONTENT_X + 25, 120, 30, DARKBLUE);
     draw_back_button();
 
-    if (draw_button({330, 175, 170, 44}, "Dang ky ca")) {
+    if (draw_button({330, 175, 170, 44}, "Đăng ký ca")) {
         open_page(SHIFT_REGISTER);
         return;
     }
-    if (draw_button({525, 175, 170, 44}, "Rut khoi ca", ORANGE)) {
+    if (draw_button({525, 175, 170, 44}, "Rút khỏi ca", ORANGE)) {
         open_page(SHIFT_CANCEL);
         return;
     }
     if (role == "manager" &&
-        draw_button({720, 175, 170, 44}, "Xoa ca truc", RED)) {
+        draw_button({720, 175, 170, 44}, "Xóa ca trực", RED)) {
         open_page(SHIFT_DELETE);
         return;
     }
@@ -743,7 +983,7 @@ void library_gui::draw_shifts(const std::string& role) {
     int page_count = total == 0 ? 1 : (total + ROWS_PER_PAGE - 1) / ROWS_PER_PAGE;
     if (list_page >= page_count) list_page = page_count - 1;
 
-    const char* headers[] = {"Ngay", "Ca", "So nguoi", "Danh sach admin"};
+    const char* headers[] = {"Ngày", "Ca", "Số người", "Danh sách admin"};
     const int columns[] = {335, 535, 680, 840};
     draw_table_header(headers, columns, 4, 240);
 
@@ -760,7 +1000,7 @@ void library_gui::draw_shifts(const std::string& role) {
                                    : Color{232, 239, 248, 255});
         DrawText(TextFormat("%d/%d/%d", day.get_day(), day.get_month(), day.get_year()),
                  335, y + 11, 17, DARKGRAY);
-        DrawText(item.get_session().c_str(), 535, y + 11, 17, DARKGRAY);
+        DrawText(display_session(item.get_session()).c_str(), 535, y + 11, 17, DARKGRAY);
         DrawText(TextFormat("%d/4", item.get_current_count()),
                  680, y + 11, 17, DARKGRAY);
         DrawText(item.get_all_admins_string().c_str(), 840, y + 11, 17, DARKGRAY);
@@ -768,10 +1008,10 @@ void library_gui::draw_shifts(const std::string& role) {
         ++row;
     }
     if (total == 0) {
-        DrawText("Chua co ca truc phu hop.", 335, 310, 20, DARKGRAY);
+        DrawText("Chưa có ca trực phù hợp.", 335, 310, 20, DARKGRAY);
     }
 
-    if (draw_button({CONTENT_X + 230, 595, 110, 40}, "Truoc", GRAY) &&
+    if (draw_button({CONTENT_X + 230, 595, 110, 40}, "Trước", GRAY) &&
         list_page > 0) --list_page;
     if (draw_button({CONTENT_X + 550, 595, 110, 40}, "Sau", GRAY) &&
         list_page + 1 < page_count) ++list_page;
@@ -779,79 +1019,106 @@ void library_gui::draw_shifts(const std::string& role) {
 }
 
 void library_gui::draw_shift_form(bool cancelling, bool deleting) {
-    const char* title = deleting ? "Xoa ca truc" :
-                        cancelling ? "Rut khoi ca truc" : "Dang ky ca truc";
+    const char* title = deleting ? "Xóa ca trực" :
+                        cancelling ? "Rút khỏi ca trực" : "Đăng ký ca trực";
     DrawText(title, CONTENT_X + 25, 120, 30, DARKBLUE);
     draw_back_button();
 
-    draw_input({340, 200, 360, 44}, "Ngay (DD/MM/YYYY)", field_a, sizeof(field_a));
-    draw_input({740, 200, 360, 44}, "Ca: sang hoac chieu", field_b, sizeof(field_b));
+    draw_input({340, 200, 360, 44}, "Ngày (DD/MM/YYYY)", field_a, sizeof(field_a));
+    draw_input({740, 200, 360, 44}, "Ca: sáng hoặc chiều", field_b, sizeof(field_b));
 
     bool manager = controller.get_current_role() == "manager";
     if (!deleting && manager) {
-        draw_input({340, 290, 360, 44}, "Ma admin/manager", field_c, sizeof(field_c));
+        draw_input({340, 290, 360, 44}, "Mã admin/manager", field_c, sizeof(field_c));
     } else if (!deleting) {
-        DrawText(TextFormat("Nhan vien: %s",
+        DrawText(TextFormat("Nhân viên: %s",
                             controller.get_current_user()->get_id().c_str()),
                  340, 300, 21, DARKGRAY);
     }
 
-    const char* action = deleting ? "Xoa ca" : cancelling ? "Rut khoi ca" : "Dang ky";
+    const char* action = deleting ? "Xóa ca" : cancelling ? "Rút khỏi ca" : "Đăng ký";
     Color action_color = deleting ? RED : cancelling ? ORANGE : BLUE;
     if (!draw_button({530, 400, 210, 48}, action, action_color)) return;
 
     date shift_date;
-    if (!read_date(field_a, shift_date) ||
-        (std::strcmp(field_b, "sang") != 0 && std::strcmp(field_b, "chieu") != 0)) {
-        set_message("Ngay hoac ca truc khong hop le.", true);
+    std::string session = normalize_session(field_b);
+    if (!read_date(field_a, shift_date) || session.empty()) {
+        set_message("Ngày hoặc ca trực không hợp lệ.", true);
         return;
     }
+
+    std::string date_text = format_date(shift_date);
+    std::string session_text = display_session(session);
 
     if (deleting) {
-        if (controller.delete_shift(shift_date, field_b)) {
-            set_message("Da xoa toan bo ca truc.");
-            clear_fields();
-        } else {
-            set_message("Khong tim thay ca truc.", true);
-        }
+        ask_confirm("Xác nhận xóa ca trực",
+                    "Xóa toàn bộ ca trực này?\n"
+                    "Ngày: " + date_text + "\n"
+                    "Ca: " + session_text,
+                    "Xóa ca", RED,
+                    [this, shift_date, session]() {
+            if (controller.delete_shift(shift_date, session)) {
+                set_message("Đã xóa toàn bộ ca trực.");
+                clear_fields();
+            } else {
+                set_message("Không tìm thấy ca trực.", true);
+            }
+        });
         return;
     }
 
-    const char* person_id = manager ? field_c
-                                    : controller.get_current_user()->get_id().c_str();
-    if (is_blank(person_id)) {
-        set_message("Nhap ma nhan vien.", true);
-    } else if ((!cancelling &&
-                controller.register_shift(shift_date, field_b, person_id)) ||
-               (cancelling &&
-                controller.cancel_shift(shift_date, field_b, person_id))) {
-        set_message(cancelling ? "Da rut khoi ca truc." : "Da dang ky ca truc.");
-        clear_fields();
+    std::string person_id;
+    if (manager) {
+        person_id = field_c;
     } else {
-        set_message(cancelling
-                    ? "Khong tim thay nhan vien trong ca truc."
-                    : "Khong dang ky duoc: ca day, trung ca hoac sai vai tro.",
-                    true);
+        person_id = controller.get_current_user()->get_id();
     }
+    if (is_blank(person_id.c_str())) {
+        set_message("Nhập mã nhân viên.", true);
+        return;
+    }
+
+    ask_confirm(cancelling ? "Xác nhận rút khỏi ca" : "Xác nhận đăng ký ca",
+                std::string(cancelling ? "Rút nhân viên khỏi ca trực?\n"
+                                       : "Đăng ký nhân viên vào ca trực?\n") +
+                "Nhân viên: " + person_id + "\n"
+                "Ngày: " + date_text + "\n"
+                "Ca: " + session_text,
+                cancelling ? "Rút khỏi ca" : "Đăng ký",
+                cancelling ? ORANGE : BLUE,
+                [this, cancelling, shift_date, session, person_id]() {
+        bool success = cancelling
+            ? controller.cancel_shift(shift_date, session, person_id)
+            : controller.register_shift(shift_date, session, person_id);
+        if (success) {
+            set_message(cancelling ? "Đã rút khỏi ca trực." : "Đã đăng ký ca trực.");
+            clear_fields();
+        } else {
+            set_message(cancelling
+                        ? "Không tìm thấy nhân viên trong ca trực."
+                        : "Không đăng ký được: ca đầy, trùng ca hoặc sai vai trò.",
+                        true);
+        }
+    });
 }
 
 void library_gui::draw_salary(const std::string& role) {
-    DrawText(role == "manager" ? "Tinh luong ca truc" : "Luong ca truc cua toi",
+    DrawText(role == "manager" ? "Tính lương ca trực" : "Lương ca trực của tôi",
              CONTENT_X + 25, 120, 30, DARKBLUE);
     draw_back_button();
 
     if (role == "manager") {
-        draw_input({340, 205, 300, 44}, "Ma admin/manager", field_a, sizeof(field_a));
-        draw_input({675, 205, 210, 44}, "Thang, 0 = tat ca", field_b, sizeof(field_b));
-        draw_input({920, 205, 210, 44}, "Nam, 0 = tat ca", field_c, sizeof(field_c));
+        draw_input({340, 205, 300, 44}, "Mã admin/manager", field_a, sizeof(field_a));
+        draw_input({675, 205, 210, 44}, "Tháng, 0 = tất cả", field_b, sizeof(field_b));
+        draw_input({920, 205, 210, 44}, "Năm, 0 = tất cả", field_c, sizeof(field_c));
     } else {
-        draw_input({380, 205, 280, 44}, "Thang, 0 = tat ca", field_a, sizeof(field_a));
-        draw_input({710, 205, 280, 44}, "Nam, 0 = tat ca", field_b, sizeof(field_b));
+        draw_input({380, 205, 280, 44}, "Tháng, 0 = tất cả", field_a, sizeof(field_a));
+        draw_input({710, 205, 280, 44}, "Năm, 0 = tất cả", field_b, sizeof(field_b));
     }
 
-    if (draw_button({530, 320, 210, 48}, "Tinh luong", DARKGREEN)) {
-        const char* id = role == "manager" ? field_a
-                                           : controller.get_current_user()->get_id().c_str();
+    if (draw_button({530, 320, 210, 48}, "Tính lương", DARKGREEN)) {
+        std::string id = role == "manager" ? std::string(field_a)
+                                           : controller.get_current_user()->get_id();
         const char* month_text = role == "manager" ? field_b : field_a;
         const char* year_text = role == "manager" ? field_c : field_b;
         int month = 0;
@@ -859,212 +1126,247 @@ void library_gui::draw_salary(const std::string& role) {
 
         bool month_ok = is_blank(month_text) || read_integer(month_text, month, 0, 12);
         bool year_ok = is_blank(year_text) || read_integer(year_text, year, 0, 2026);
-        if (is_blank(id) || !month_ok || !year_ok) {
-            set_message("Nhap ma, thang va nam hop le.", true);
+        if (is_blank(id.c_str()) || !month_ok || !year_ok) {
+            set_message("Nhập mã, tháng và năm hợp lệ.", true);
         } else {
             long long total = controller.get_admin_salary(id, month, year);
-            set_message(TextFormat("Tong luong: %lld VND (%lld buoi)",
+            set_message(TextFormat("Tổng lương: %lld VNĐ (%lld buổi)",
                                    total, total / 200000));
         }
     }
 }
 
 void library_gui::draw_users() {
-    DrawText("Quan ly nguoi dung", CONTENT_X + 25, 120, 30, DARKBLUE);
+    DrawText("Quản lý người dùng", CONTENT_X + 25, 120, 30, DARKBLUE);
     draw_back_button();
 
-    if (draw_button({340, 185, 175, 48}, "Them tai khoan")) {
+    if (draw_button({340, 185, 175, 48}, "Thêm tài khoản")) {
         open_page(USER_ADD);
         return;
     }
-    if (draw_button({545, 185, 175, 48}, "Sua tai khoan", ORANGE)) {
+    if (draw_button({545, 185, 175, 48}, "Sửa tài khoản", ORANGE)) {
         open_page(USER_EDIT);
         return;
     }
-    if (draw_button({750, 185, 175, 48}, "Xoa tai khoan", RED)) {
+    if (draw_button({750, 185, 175, 48}, "Xóa tài khoản", RED)) {
         open_page(USER_DELETE);
         return;
     }
 
-    draw_input({340, 295, 380, 44}, "Ma tai khoan can tra cuu",
+    draw_input({340, 295, 380, 44}, "Mã tài khoản cần tra cứu",
                field_a, sizeof(field_a));
-    if (draw_button({750, 295, 150, 44}, "Tra cuu")) {
+    if (draw_button({750, 295, 150, 44}, "Tra cứu")) {
         if (is_blank(field_a)) {
-            set_message("Nhap ma tai khoan.", true);
+            set_message("Nhập mã tài khoản.", true);
         } else {
             node<user>* found = controller.get_user_by_id(field_a);
             if (found == nullptr) {
-                set_message("Khong tim thay tai khoan.", true);
+                set_message("Không tìm thấy tài khoản.", true);
             } else {
                 user item = found->get_data();
-                set_message("ID: " + item.get_id() + " | Ten: " +
-                            item.get_name() + " | Vai tro: " + item.get_role());
+                set_message("Mã: " + item.get_id() + " | Tên: " +
+                            item.get_name() + " | Vai trò: " +
+                            display_role(item.get_role()));
             }
         }
     }
 }
 
 void library_gui::draw_user_form(bool editing) {
-    DrawText(editing ? "Cap nhat tai khoan" : "Them tai khoan moi",
+    DrawText(editing ? "Cập nhật tài khoản" : "Thêm tài khoản mới",
              CONTENT_X + 25, 120, 30, DARKBLUE);
     draw_back_button();
 
     if (editing) {
-        draw_input({340, 185, 360, 44}, "Ma tai khoan cu", field_a, sizeof(field_a));
-        draw_input({740, 185, 360, 44}, "Ma tai khoan moi", field_b, sizeof(field_b));
-        draw_input({340, 270, 360, 44}, "Ho va ten", field_c, sizeof(field_c));
-        draw_input({740, 270, 360, 44}, "Mat khau", field_d, sizeof(field_d));
-        draw_input({340, 355, 360, 44}, "Vai tro: manager, admin, user",
+        draw_input({340, 185, 360, 44}, "Mã tài khoản cũ", field_a, sizeof(field_a));
+        draw_input({740, 185, 360, 44}, "Mã tài khoản mới", field_b, sizeof(field_b));
+        draw_input({340, 270, 360, 44}, "Họ và tên", field_c, sizeof(field_c));
+        draw_input({740, 270, 360, 44}, "Mật khẩu", field_d, sizeof(field_d));
+        draw_input({340, 355, 360, 44}, "Vai trò: manager, admin, user",
                    field_e, sizeof(field_e));
     } else {
-        draw_input({340, 195, 360, 44}, "Ma tai khoan", field_a, sizeof(field_a));
-        draw_input({740, 195, 360, 44}, "Ho va ten", field_b, sizeof(field_b));
-        draw_input({340, 280, 360, 44}, "Mat khau", field_c, sizeof(field_c));
-        draw_input({740, 280, 360, 44}, "Vai tro: manager, admin, user",
+        draw_input({340, 195, 360, 44}, "Mã tài khoản", field_a, sizeof(field_a));
+        draw_input({740, 195, 360, 44}, "Họ và tên", field_b, sizeof(field_b));
+        draw_input({340, 280, 360, 44}, "Mật khẩu", field_c, sizeof(field_c));
+        draw_input({740, 280, 360, 44}, "Vai trò: manager, admin, user",
                    field_d, sizeof(field_d));
     }
 
     if (!draw_button({530, 465, 220, 48},
-                     editing ? "Cap nhat" : "Them tai khoan")) {
+                     editing ? "Cập nhật" : "Thêm tài khoản")) {
         return;
     }
 
-    const char* old_id = editing ? field_a : field_a;
-    const char* id = editing ? field_b : field_a;
-    const char* name = editing ? field_c : field_b;
-    const char* password = editing ? field_d : field_c;
-    const char* role = editing ? field_e : field_d;
-    bool supported_role = std::strcmp(role, "manager") == 0 ||
-                          std::strcmp(role, "admin") == 0 ||
-                          std::strcmp(role, "user") == 0;
+    std::string old_id = field_a;
+    std::string id = editing ? field_b : field_a;
+    std::string name = editing ? field_c : field_b;
+    std::string password = editing ? field_d : field_c;
+    std::string role = editing ? field_e : field_d;
+    bool supported_role = role == "manager" || role == "admin" || role == "user";
 
-    if (is_blank(old_id) || is_blank(id) || is_blank(name) ||
-        is_blank(password) || !supported_role) {
-        set_message("Nhap day du thong tin va vai tro hop le.", true);
-    } else if ((!editing && controller.add_new_user(id, name, password, role)) ||
-               (editing && controller.update_user_info(old_id,
-                                                        user(id, name, password, role)))) {
-        set_message(editing ? "Da cap nhat tai khoan." : "Da them tai khoan.");
-        clear_fields();
+    if (is_blank(old_id.c_str()) || is_blank(id.c_str()) || is_blank(name.c_str()) ||
+        is_blank(password.c_str()) || !supported_role) {
+        set_message("Nhập đầy đủ thông tin và vai trò hợp lệ.", true);
+        return;
+    }
+
+    std::string summary = "Mã tài khoản: " + id + "\n"
+                          "Họ và tên: " + name + "\n"
+                          "Vai trò: " + display_role(role);
+
+    if (editing) {
+        ask_confirm("Xác nhận cập nhật tài khoản",
+                    "Cập nhật tài khoản " + old_id + "?\n" + summary,
+                    "Cập nhật", ORANGE,
+                    [this, old_id, id, name, password, role]() {
+            if (controller.update_user_info(old_id, user(id, name, password, role))) {
+                set_message("Đã cập nhật tài khoản.");
+                clear_fields();
+            } else {
+                set_message("Cập nhật thất bại.", true);
+            }
+        });
     } else {
-        set_message(editing ? "Cap nhat that bai." : "Ma tai khoan da ton tai.", true);
+        ask_confirm("Xác nhận thêm tài khoản",
+                    "Thêm tài khoản mới?\n" + summary,
+                    "Thêm tài khoản", BLUE,
+                    [this, id, name, password, role]() {
+            if (controller.add_new_user(id, name, password, role)) {
+                set_message("Đã thêm tài khoản.");
+                clear_fields();
+            } else {
+                set_message("Mã tài khoản đã tồn tại.", true);
+            }
+        });
     }
 }
 
 void library_gui::draw_user_delete() {
-    DrawText("Xoa tai khoan", CONTENT_X + 25, 120, 30, DARKBLUE);
+    DrawText("Xóa tài khoản", CONTENT_X + 25, 120, 30, DARKBLUE);
     draw_back_button();
-    draw_input({360, 220, 420, 46}, "Ma tai khoan can xoa",
+    draw_input({360, 220, 420, 46}, "Mã tài khoản cần xóa",
                field_a, sizeof(field_a));
 
-    if (draw_button({460, 315, 210, 48}, "Xoa tai khoan", RED)) {
-        if (is_blank(field_a)) {
-            set_message("Nhap ma tai khoan can xoa.", true);
-        } else if (controller.get_user_by_id(field_a) == nullptr) {
-            set_message("Khong tim thay tai khoan.", true);
-        } else if (controller.has_active_borrows(field_a)) {
-            set_message(
-                "Khong the xoa tai khoan dang muon sach "
-                "hoac con sach qua han chua tra.",
-                true);
-        } else if (controller.delete_user(field_a)) {
-            set_message("Da xoa tai khoan.");
+    if (!draw_button({460, 315, 210, 48}, "Xóa tài khoản", RED)) return;
+
+    if (is_blank(field_a)) {
+        set_message("Nhập mã tài khoản cần xóa.", true);
+        return;
+    }
+    node<user>* found = controller.get_user_by_id(field_a);
+    if (found == nullptr) {
+        set_message("Không tìm thấy tài khoản.", true);
+        return;
+    }
+    if (controller.has_active_borrows(field_a)) {
+        set_message("Không thể xóa tài khoản đang mượn sách "
+                    "hoặc còn sách quá hạn chưa trả.", true);
+        return;
+    }
+
+    std::string id = field_a;
+    std::string name = found->get_data().get_name();
+    ask_confirm("Xác nhận xóa tài khoản",
+                "Bạn có chắc chắn muốn xóa tài khoản này?\n"
+                "Mã tài khoản: " + id + "\n"
+                "Họ và tên: " + name,
+                "Xóa tài khoản", RED,
+                [this, id]() {
+        if (controller.delete_user(id)) {
+            set_message("Đã xóa tài khoản.");
             clear_fields();
         } else {
-            set_message("Xoa tai khoan that bai.", true);
+            set_message("Xóa tài khoản thất bại.", true);
         }
-    }
+    });
 }
 
 void library_gui::draw_shelf() {
-    DrawText("Tra cuu vi tri ke sach", CONTENT_X + 25, 120, 30, DARKBLUE);
+    DrawText("Tra cứu vị trí kệ sách", CONTENT_X + 25, 120, 30, DARKBLUE);
     draw_back_button();
 
-    draw_input({360, 220, 420, 46}, "Ma sach", field_a, sizeof(field_a));
-    if (draw_button({480, 315, 180, 48}, "Tra cuu")) {
+    draw_input({360, 220, 420, 46}, "Mã sách", field_a, sizeof(field_a));
+    if (draw_button({480, 315, 180, 48}, "Tra cứu")) {
         if (is_blank(field_a)) {
-            set_message("Nhap ma sach.", true);
+            set_message("Nhập mã sách.", true);
         } else {
             node<book>* found = controller.get_book_by_id(field_a);
             if (found == nullptr) {
-                set_message("Khong tim thay sach.", true);
+                set_message("Không tìm thấy sách.", true);
             } else {
                 book item = found->get_data();
-                set_message("Sach: " + item.get_title() +
-                            " | The loai: " + item.get_category() +
-                            " | Ke: " + controller.get_book_shelf(item.get_id()));
+                set_message("Sách: " + item.get_title() +
+                            " | Thể loại: " + item.get_category() +
+                            " | Kệ: " + display_shelf(controller.get_book_shelf(item.get_id())));
             }
         }
     }
 }
 
 void library_gui::draw_user_request() {
-    DrawText("Dang ky muon sach", CONTENT_X + 25, 120, 30, DARKBLUE);
+    DrawText("Đăng ký mượn sách", CONTENT_X + 25, 120, 30, DARKBLUE);
     draw_back_button();
 
-    draw_input({340, 195, 360, 44}, "Ma yeu cau / ma phieu", field_a, sizeof(field_a));
-    draw_input({740, 195, 360, 44}, "Ma sach", field_b, sizeof(field_b));
-    draw_input({340, 280, 360, 44}, "Ngay muon (DD/MM/YYYY)", field_c, sizeof(field_c));
-    draw_input({740, 280, 360, 44}, "Thoi han: 7, 14 hoac 30 ngay",
+    draw_input({340, 195, 360, 44}, "Mã yêu cầu / mã phiếu", field_a, sizeof(field_a));
+    draw_input({740, 195, 360, 44}, "Mã sách", field_b, sizeof(field_b));
+    draw_input({340, 280, 360, 44}, "Ngày mượn (DD/MM/YYYY)", field_c, sizeof(field_c));
+    draw_input({740, 280, 360, 44}, "Thời hạn: 7, 14 hoặc 30 ngày",
                field_d, sizeof(field_d));
 
-    if (draw_button({530, 390, 210, 48}, "Gui yeu cau")) {
-        date borrow_date;
-        int duration = 0;
-        if (is_blank(field_a) || is_blank(field_b) ||
-            !read_date(field_c, borrow_date) ||
-            !read_integer(field_d, duration, 1, 30) ||
-            (duration != 7 && duration != 14 && duration != 30)) {
-            set_message("Kiem tra thong tin, ngay va thoi han muon.", true);
-        }
-        else
-        {
-            user *current_user = controller.get_current_user();
+    if (!draw_button({530, 390, 210, 48}, "Gửi yêu cầu")) return;
 
-            if (current_user == nullptr)
-            {
-                set_message("Vui long dang nhap lai.", true);
-            }
-            else if (controller.has_overdue_borrows(
-                         current_user->get_id()))
-            {
-                set_message(
-                    "Ban con sach qua han chua tra, "
-                    "khong the dang ky muon sach.",
-                    true);
-            }
-            else if (controller.get_book_by_id(field_b) == nullptr)
-            {
-                set_message("Khong tim thay ma sach.", true);
-            }
-            else
-            {
-                date due_date = borrow_date.add_days(duration);
-
-                if (controller.register_book_request(
-                        field_a,
-                        field_b,
-                        current_user->get_id(),
-                        borrow_date,
-                        due_date))
-                {
-                    set_message("Da dua yeu cau vao hang doi.");
-                    clear_fields();
-                }
-                else
-                {
-                    set_message(
-                        "Gui yeu cau that bai. Kiem tra ma yeu cau, "
-                        "so luong sach hoac lich su muon.",
-                        true);
-                }
-            }
-        }
+    date borrow_date;
+    int duration = 0;
+    if (is_blank(field_a) || is_blank(field_b) ||
+        !read_date(field_c, borrow_date) ||
+        !read_integer(field_d, duration, 1, 30) ||
+        (duration != 7 && duration != 14 && duration != 30)) {
+        set_message("Kiểm tra thông tin, ngày và thời hạn mượn.", true);
+        return;
     }
+
+    user* current_user = controller.get_current_user();
+    if (current_user == nullptr) {
+        set_message("Vui lòng đăng nhập lại.", true);
+        return;
+    }
+    std::string user_id = current_user->get_id();
+    if (controller.has_overdue_borrows(user_id)) {
+        set_message("Bạn còn sách quá hạn chưa trả, "
+                    "không thể đăng ký mượn sách.", true);
+        return;
+    }
+    std::string request_id = field_a;
+    std::string book_id = field_b;
+    node<book>* book_node = controller.get_book_by_id(book_id);
+    if (book_node == nullptr) {
+        set_message("Không tìm thấy mã sách.", true);
+        return;
+    }
+
+    std::string title = book_node->get_data().get_title();
+    date due_date = borrow_date.add_days(duration);
+
+    ask_confirm("Xác nhận đăng ký mượn sách",
+                "Gửi yêu cầu mượn sách này?\n"
+                "Sách: " + book_id + " - " + title + "\n"
+                "Ngày mượn: " + format_date(borrow_date) + "\n"
+                "Hạn trả: " + format_date(due_date),
+                "Gửi yêu cầu", BLUE,
+                [this, request_id, book_id, user_id, borrow_date, due_date]() {
+        if (controller.register_book_request(request_id, book_id, user_id,
+                                             borrow_date, due_date)) {
+            set_message("Đã đưa yêu cầu vào hàng đợi.");
+            clear_fields();
+        } else {
+            set_message("Gửi yêu cầu thất bại. Kiểm tra mã yêu cầu, "
+                        "số lượng sách hoặc lịch sử mượn.", true);
+        }
+    });
 }
 
 void library_gui::draw_my_borrows(bool active_only) {
-    DrawText(active_only ? "Sach dang muon" : "Lich su muon sach",
+    DrawText(active_only ? "Sách đang mượn" : "Lịch sử mượn sách",
              CONTENT_X + 25, 120, 30, DARKBLUE);
     draw_back_button();
 
@@ -1074,7 +1376,7 @@ void library_gui::draw_my_borrows(bool active_only) {
     int page_count = total == 0 ? 1 : (total + ROWS_PER_PAGE - 1) / ROWS_PER_PAGE;
     if (list_page >= page_count) list_page = page_count - 1;
 
-    const char* headers[] = {"Ma phieu", "Ten sach", "Ngay muon", "Han tra", "Trang thai"};
+    const char* headers[] = {"Mã phiếu", "Tên sách", "Ngày mượn", "Hạn trả", "Trạng thái"};
     const int columns[] = {330, 465, 765, 910, 1045};
     draw_table_header(headers, columns, 5, 185);
 
@@ -1101,17 +1403,17 @@ void library_gui::draw_my_borrows(bool active_only) {
                             item.get_due_date().get_month(),
                             item.get_due_date().get_year()),
                  910, y + 12, 17, DARKGRAY);
-        DrawText(item.get_status().c_str(), 1045, y + 12, 17, DARKGRAY);
+        DrawText(display_status(item.get_status()).c_str(), 1045, y + 12, 17, DARKGRAY);
         current = current->get_next();
         ++row;
     }
 
     if (total == 0) {
-        DrawText(active_only ? "Ban khong co sach dang muon."
-                             : "Ban chua co lich su muon sach.",
+        DrawText(active_only ? "Bạn không có sách đang mượn."
+                             : "Bạn chưa có lịch sử mượn sách.",
                  330, 260, 20, DARKGRAY);
     }
-    if (draw_button({CONTENT_X + 230, 595, 110, 40}, "Truoc", GRAY) &&
+    if (draw_button({CONTENT_X + 230, 595, 110, 40}, "Trước", GRAY) &&
         list_page > 0) --list_page;
     if (draw_button({CONTENT_X + 550, 595, 110, 40}, "Sau", GRAY) &&
         list_page + 1 < page_count) ++list_page;
@@ -1123,6 +1425,9 @@ void library_gui::draw(const std::string& role) {
     ClearBackground(page_background);
 
     BeginMode2D(ui_layout::camera());
+
+    // Khi hop thoai xac nhan dang mo, khoa moi thao tac o phia sau.
+    input_locked = confirm_open;
 
     collect_text_input();
     draw_shell(role);
@@ -1157,6 +1462,7 @@ void library_gui::draw(const std::string& role) {
     }
 
     draw_message();
+    draw_confirm_dialog();
 
     EndMode2D();
     EndDrawing();

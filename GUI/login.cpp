@@ -13,16 +13,16 @@ login_screen::login_screen(library_controller& c)
 
 void login_screen::try_login() {
     if (id[0] == '\0' || password[0] == '\0') {
-        message = "Vui long nhap day du thong tin!";
+        message = "Vui lòng nhập đầy đủ thông tin!";
         return;
     }
 
     if (controller.login(id, password)) {
         logged_in = true;
         role = controller.get_current_role();
-        message = "Dang nhap thanh cong!";
+        message = "Đăng nhập thành công!";
     } else {
-        message = "Sai ma tai khoan hoac mat khau!";
+        message = "Sai mã tài khoản hoặc mật khẩu!";
     }
 }
 
@@ -111,29 +111,29 @@ void login_screen::draw() {
     BeginMode2D(ui_layout::camera());
 
     if (logged_in) {
-        DrawText("DANG NHAP THANH CONG",
+        DrawText("ĐĂNG NHẬP THÀNH CÔNG",
                  410, 240, 34, DARKGREEN);
 
-        DrawText(TextFormat("Vai tro: %s", role.c_str()),
+        DrawText(TextFormat("Vai trò: %s", role == "manager" ? "Quản lý" : role == "admin" ? "Quản trị viên" : "Độc giả"),
                  490, 310, 28, DARKBLUE);
 
-        DrawText("Nhan ENTER hoac ESC de dang xuat",
+        DrawText("Nhấn ENTER hoặc ESC để đăng xuất",
                  400, 400, 22, GRAY);
     } else {
         DrawRectangleRounded(
             {360, 95, 500, 555}, 0.06f, 12, WHITE);
 
-        int title_w = MeasureText("QUAN LY THU VIEN", 32);
-        DrawText("QUAN LY THU VIEN",
+        int title_w = MeasureText("QUẢN LÝ THƯ VIỆN", 32);
+        DrawText("QUẢN LÝ THƯ VIỆN",
                  360 + (500 - title_w) / 2, 135, 32, DARKBLUE);
 
-        int sub_w = MeasureText("DANG NHAP HE THONG", 21);
-        DrawText("DANG NHAP HE THONG",
+        int sub_w = MeasureText("ĐĂNG NHẬP HỆ THỐNG", 21);
+        DrawText("ĐĂNG NHẬP HỆ THỐNG",
                  360 + (500 - sub_w) / 2, 185, 21, GRAY);
 
         draw_input_box(
             415, 270, 390, 56,
-            "Ma tai khoan", id, focus_id);
+            "Mã tài khoản", id, focus_id);
 
         std::string displayed_password;
 
@@ -145,25 +145,25 @@ void login_screen::draw() {
 
         draw_input_box(
             415, 375, 390, 56,
-            "Mat khau", displayed_password.c_str(),
+            "Mật khẩu", displayed_password.c_str(),
             focus_password);
 
         Rectangle eye = {740, 380, 55, 46};
 
-        DrawText(show_password ? "AN" : "HIEN",
+        DrawText(show_password ? "ẨN" : "HIỆN",
                  745, 393, 18, DARKBLUE);
 
         Rectangle button = {415, 465, 390, 54};
 
         DrawRectangleRounded(button, 0.15f, 8, BLUE);
-        int btn_w = MeasureText("DANG NHAP", 22);
-        DrawText("DANG NHAP", 415 + (390 - btn_w) / 2, 481, 22, WHITE);
+        int btn_w = MeasureText("ĐĂNG NHẬP", 22);
+        DrawText("ĐĂNG NHẬP", 415 + (390 - btn_w) / 2, 481, 22, WHITE);
 
-        DrawText("TAB: chuyen o | ENTER: dang nhap",
+        DrawText("TAB: chuyển ô | ENTER: đăng nhập",
                  415, 540, 18, GRAY);
 
         if (!message.empty()) {
-            Color color = message == "Dang nhap thanh cong!"
+            Color color = message == "Đăng nhập thành công!"
                           ? DARKGREEN : RED;
             DrawText(message.c_str(), 415, 580, 19, color);
         }

@@ -2,9 +2,10 @@
 
 #include "raylib.h"
 #include "../Controller/library_controller.h"
+#include <functional>
 #include <string>
+#include <vector>
 
-// Sao chep file nay vao PBL2_GUI_test/GUI/library_gui.h
 class library_gui {
 private:
     enum page {
@@ -24,6 +25,9 @@ private:
     bool logout_requested;
     int list_page;
 
+    // Lich su cac trang da di qua, dung cho nut "Quay lai".
+    std::vector<page> history;
+
     char field_a[96];
     char field_b[160];
     char field_c[160];
@@ -37,10 +41,28 @@ private:
     bool message_is_error;
     bool showing_related;
 
+    // Hop thoai xac nhan.
+    bool confirm_open;
+    bool confirm_just_opened;
+    bool input_locked;
+    std::string confirm_title;
+    std::string confirm_text;
+    std::string confirm_ok_label;
+    Color confirm_ok_color;
+    std::function<void()> confirm_action;
+
     void collect_text_input();
     void clear_fields();
-    void open_page(page next_page);
+    void switch_page(page next_page);
+    void open_page(page next_page);      // di toi trang con, luu lai trang hien tai
+    void open_root_page(page next_page); // chon tu menu ben trai, xoa lich su
+    void go_back();                      // quay ve trang truoc do
     void set_message(const std::string& text, bool is_error = false);
+
+    void ask_confirm(const std::string& title, const std::string& text,
+                     const std::string& ok_label, Color ok_color,
+                     std::function<void()> action);
+    void draw_confirm_dialog();
 
     void draw_shell(const std::string& role);
     void draw_sidebar(const std::string& role);
