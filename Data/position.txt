@@ -1,7 +1,45 @@
 B001;IT;a1
 B002;IT;a1
-B003;IT;a2
-B004;It;a2
+B003;Ky nang;c1
+B004;IT;a1
 B005;Tieu thuyet;b1
-B006;Tieu thuyet;b2
-B007;Ky nang;c1
+B006;Tieu thuyet;b1
+B007;IT;a1
+B008;IT;a1
+B009;IT;a1
+B010;IT;a2
+B011;IT;a2
+B012;IT;a2
+B013;IT;a2
+B014;Ky nang;c1
+B015;Ky nang;c1
+B016;Ky nang;c1
+B017;Ky nang;c1
+B018;Tieu thuyet;b1
+B019;Tieu thuyet;b1
+B020;Tieu thuyet;b1
+B021;Tieu thuyet;b1
+B022;Van hoc;b3
+B023;Van hoc;b3
+B024;Van hoc;b3
+B025;Van hoc;b3
+B026;Khoa hoc;d1
+B027;Khoa hoc;d1
+B028;Khoa hoc;d1
+B029;Lich su;d2
+B030;Lich su;d2
+B031;Lich su;d2
+B032;Kinh te;e1
+B033;Kinh te;e1
+B034;Kinh te;e1
+B035;Kinh te;e1
+B036;Tam ly;e3
+B037;Tam ly;e3
+B038;Thieu nhi;f1
+B039;Thieu nhi;f1
+B040;Thieu nhi;f1
+B041;Ngoai ngu;f2
+B042;Ngoai ngu;f2
+B043;Toan hoc;d3
+B044;Nghe thuat;g1
+B045;Suc khoe;g2

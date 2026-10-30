@@ -1,5 +1,12 @@
-AD01;Nguyen Van Quan Ly;admin123;manager
-US01;Tran Thi Sinh Vien;user123;user
-US02;Le Van Hoc Sinh;123456;user
-AD02;Ngo Thi Thu;thu123;admin
-US03;Hoang Bao;password;user
+AD01;Nguyễn Văn Quản Lý;admin123;manager
+US01;Trần Thị Sinh Viên;user123;user
+US02;Lê Văn Học Sinh;123456;user
+AD02;Ngô Thị Thu;thu123;admin
+US03;Hoàng Bảo;password;user
+AD03;Tran Minh Tuan;tuan123;admin
+AD04;Pham Hai Yen;yen123;admin
+US04;Pham Minh Châu;chau123;user
+US05;Đỗ Quoc Khánh;khanh123;user
+US06;Vu Thu Ha;ha123;user
+US07;Bùi Gia Hân;han123;user
+US08;Dang Hữu Phuc;phuc123;user
