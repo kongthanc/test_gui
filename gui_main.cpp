@@ -6,34 +6,27 @@
 
 Font app_font;
 
-std::vector<int> GetVietnameseCodepoints() {
-    std::vector<int> cps;
-    for (int i = 32; i <= 255; ++i) cps.push_back(i);
-    int vn[] = {
-        0x0102, 0x0103, 0x0110, 0x0111, 0x0128, 0x0129, 0x0168, 0x0169, 0x01A0, 0x01A1,
-        0x01AF, 0x01B0, 0x1EA0, 0x1EA1, 0x1EA2, 0x1EA3, 0x1EA4, 0x1EA5, 0x1EA6, 0x1EA7,
-        0x1EA8, 0x1EA9, 0x1EAA, 0x1EAB, 0x1EAC, 0x1EAD, 0x1EAE, 0x1EAF, 0x1EB0, 0x1EB1,
-        0x1EB2, 0x1EB3, 0x1EB4, 0x1EB5, 0x1EB6, 0x1EB7, 0x1EB8, 0x1EB9, 0x1EBA, 0x1EBB,
-        0x1EBC, 0x1EBD, 0x1EBE, 0x1EBF, 0x1EC0, 0x1EC1, 0x1EC2, 0x1EC3, 0x1EC4, 0x1EC5,
-        0x1EC6, 0x1EC7, 0x1EC8, 0x1EC9, 0x1ECA, 0x1ECB, 0x1ECC, 0x1ECD, 0x1ECE, 0x1ECF,
-        0x1ED0, 0x1ED1, 0x1ED2, 0x1ED3, 0x1ED4, 0x1ED5, 0x1ED6, 0x1ED7, 0x1ED8, 0x1ED9,
-        0x1EDA, 0x1EDB, 0x1EDC, 0x1EDD, 0x1EDE, 0x1EDF, 0x1EE0, 0x1EE1, 0x1EE2, 0x1EE3,
-        0x1EE4, 0x1EE5, 0x1EE6, 0x1EE7, 0x1EE8, 0x1EE9, 0x1EEA, 0x1EEB, 0x1EEC, 0x1EED,
-        0x1EEE, 0x1EEF, 0x1EF0, 0x1EF1, 0x1EF2, 0x1EF3, 0x1EF4, 0x1EF5, 0x1EF6, 0x1EF7,
-        0x1EF8, 0x1EF9
-    };
-    for (int c : vn) cps.push_back(c);
-    return cps;
-}
-
 int main() {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
-    InitWindow(1220, 750, "PBL2 - Quan ly thu vien");
+    InitWindow(1220, 750, "PBL2 - Quản lý thư viện");
     SetWindowMinSize(900, 600);
     SetTargetFPS(60);
 
-    std::vector<int> cps = GetVietnameseCodepoints();
-    app_font = LoadFontEx("C:/Windows/Fonts/segoeui.ttf", 64, cps.data(), (int)cps.size());
+    // Nap day du ky tu tieng Viet. Neu truyen nullptr, raylib chi nap ASCII
+    // nen cac chu co dau se bi hien thanh dau '?'.
+    std::vector<int> codepoints;
+    for (int c = 32; c <= 126; ++c) codepoints.push_back(c);          // ASCII
+    for (int c = 0xA0; c <= 0x17F; ++c) codepoints.push_back(c);      // Latin-1, Latin mo rong A (A, D, I, U...)
+    codepoints.push_back(0x1A0); codepoints.push_back(0x1A1);         // O, o co rau
+    codepoints.push_back(0x1AF); codepoints.push_back(0x1B0);         // U, u co rau
+    for (int c = 0x1EA0; c <= 0x1EF9; ++c) codepoints.push_back(c);   // Latin mo rong bo sung (dau thanh)
+    codepoints.push_back(0x2013); codepoints.push_back(0x2014);       // gach ngang
+    codepoints.push_back(0x2026);                                     // dau ba cham
+
+    app_font = LoadFontEx("C:/Windows/Fonts/segoeui.ttf", 64,
+                          codepoints.data(), (int)codepoints.size());
+    bool custom_font = app_font.texture.id != 0;
+    if (!custom_font) app_font = GetFontDefault();   // du phong neu khong tim thay font
     SetTextureFilter(app_font.texture, TEXTURE_FILTER_BILINEAR);
 
     library_controller controller;
@@ -46,14 +39,16 @@ int main() {
             login.draw();
             continue;
         }
+
         app.draw(login.get_role());
+
         if (app.wants_logout()) {
             login.reset();
             app.reset();
         }
     }
 
-    UnloadFont(app_font);
+    if (custom_font) UnloadFont(app_font);
     CloseWindow();
     return 0;
 }

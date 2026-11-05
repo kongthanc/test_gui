@@ -36,6 +36,7 @@ public:
     // 3. NhÃ³m Tra cá»©u & Cáº¥u trÃºc
     node<book>* get_book_by_id(std::string id);
     linked_list<book> search_books(std::string keyword);
+    linked_list<book> get_recommended_books(std::string author, std::string category, std::string exclude_book_id);
     
     // HÃ m truyá»n con trá» hÃ m so sÃ¡nh Ä‘á»ƒ Sort (VD: cmp_by_year, cmp_by_title)
     void sort_books(bool (*cmp)(book, book)); 

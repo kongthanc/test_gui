@@ -121,29 +121,19 @@ bool library_controller::add_new_book(std::string id, std::string title, std::st
 }
 
 bool library_controller::update_book_info(std::string old_id, book book_n) {
-    if (old_id != book_n.get_id() && br_service.is_book_borrowed(old_id)) return false;
-    node<book>* old_node = b_service.get_book_by_id(old_id);
-    if (old_node == nullptr) return false;
-    book backup = old_node->get_data();
-
-    if (b_service.update_book(old_id, book_n)) {
-        book_undo_stack.push(action_log<book>(book_n.get_id(), "UPDATE", backup));
-        return true;
+    // Náº¿u Ä‘á»•i mÃ£ sÃ¡ch mÃ  sÃ¡ch cÅ© Ä‘ang cÃ³ ngÆ°á»i mÆ°á»£n -> KhÃ´ng cho Ä‘á»•i Ä‘á»ƒ trÃ¡nh sai lá»‡ch dá»¯ liá»‡u
+    if (old_id != book_n.get_id() && br_service.is_book_borrowed(old_id)) {
+        return false;
     }
-    return false;
+    return b_service.update_book(old_id, book_n);
 }
 
 bool library_controller::delete_book(std::string id) {
-    if (br_service.is_book_borrowed(id)) return false;
-    node<book>* target = b_service.get_book_by_id(id);
-    if (target == nullptr) return false;
-    book backup = target->get_data();
-
-    if (b_service.delete_book(id)) {
-        book_undo_stack.push(action_log<book>(id, "DELETE", backup));
-        return true;
+    // RÃ€NG BUá»˜C TOÃ€N Váº¸N: KhÃ´ng cho xÃ³a sÃ¡ch Ä‘ang cÃ³ ngÆ°á»i mÆ°á»£n hoáº·c quÃ¡ háº¡n chÆ°a tráº£
+    if (br_service.is_book_borrowed(id)) {
+        return false; 
     }
-    return false;
+    return b_service.delete_book(id);
 }
 
 node<book>* library_controller::get_book_by_id(std::string id) {

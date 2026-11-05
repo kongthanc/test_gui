@@ -37,9 +37,14 @@ private:
     char field_g[96];
     char* active_field;
     int active_field_capacity;
+    std::string telex_raw_word;
+    char* telex_field;
+    int telex_word_start;
+    bool telex_enabled;
     std::string message;
     bool message_is_error;
     bool showing_related;
+    std::string selected_book_id;
 
     // Hop thoai xac nhan.
     bool confirm_open;

@@ -1,9 +1,9 @@
-B001;Lap trinh C++ co ban;Nguyen Thanh Thuy;IT;9;2020
-B002;Cau truc du lieu va Giai thuat;Le Minh Hoang;IT;6;2015
-B003;Dac Nhan Tam;Dale Carnegie;Ky nang;15;2021
+B001;Lập trình C++ cơ bản;Nguyễn Thanh Thủy;IT;9;2020
+B002;Cấu trúc dữ liệu và Giải thuật;Lê Minh Hoàng;IT;6;2015
+B003;Đắc Nhân Tâm;Dale Carnegie;Kỹ năng;15;2021
 B004;Clean Code;Robert C. Martin;IT;6;2008
-B005;Nha Gia Kim;Paulo Coelho;Tieu thuyet;12;1988
-B006;Toi thay hoa vang tren co xanh;Nguyen Nhat Anh;Tieu thuyet;8;2010
+B005;Nhà Giả Kim;Paulo Coelho;Tiểu thuyết;12;1988
+B006;Tôi thấy hoa vàng trên cỏ xanh;Nguyễn Nhật Ánh;Tiểu thuyết;8;2010
 B007;Design Patterns;Gang of Four;IT;3;2012
 B008;Introduction to Algorithms;Thomas H. Cormen;IT;4;2009
 B009;The Pragmatic Programmer;Andrew Hunt;IT;3;1999
@@ -11,35 +11,35 @@ B010;Python Crash Course;Eric Matthes;IT;6;2015
 B011;Code Complete;Steve McConnell;IT;2;2004
 B012;Computer Networking: A Top-Down Approach;James F. Kurose;IT;3;2016
 B013;Artificial Intelligence: A Modern Approach;Stuart Russell;IT;2;2020
-B014;Atomic Habits;James Clear;Ky nang;9;2018
-B015;7 Thoi quen cua nguoi thanh dat;Stephen R. Covey;Ky nang;6;1989
-B016;Tu duy nhanh va cham;Daniel Kahneman;Ky nang;4;2011
-B017;Nghi giau va lam giau;Napoleon Hill;Ky nang;7;1937
-B018;Mat biec;Nguyen Nhat Anh;Tieu thuyet;6;1990
-B019;Cho toi xin mot ve di tuoi tho;Nguyen Nhat Anh;Tieu thuyet;7;2008
-B020;1984;George Orwell;Tieu thuyet;5;1949
-B021;Giet con chim nhai;Harper Lee;Tieu thuyet;4;1960
-B022;So do;Vu Trong Phung;Van hoc;5;1936
-B023;Tat den;Ngo Tat To;Van hoc;6;1939
-B024;Truyen Kieu;Nguyen Du;Van hoc;8;1820
-B025;Nhat ky trong tu;Ho Chi Minh;Van hoc;3;1960
-B026;Luoc su thoi gian;Stephen Hawking;Khoa hoc;4;1988
-B027;Cosmos;Carl Sagan;Khoa hoc;3;1980
-B028;Nguon goc cac loai;Charles Darwin;Khoa hoc;0;1859
-B029;Sapiens: Luoc su loai nguoi;Yuval Noah Harari;Lich su;6;2011
-B030;Viet Nam su luoc;Tran Trong Kim;Lich su;4;1920
-B031;Sung, vi trung va thep;Jared Diamond;Lich su;2;1997
-B032;Cha giau cha ngheo;Robert T. Kiyosaki;Kinh te;8;1997
-B033;Nha dau tu thong minh;Benjamin Graham;Kinh te;4;1949
-B034;Cua cai cua cac dan toc;Adam Smith;Kinh te;0;1776
-B035;Khoi nghiep tinh gon;Eric Ries;Kinh te;4;2011
-B036;Tam ly hoc dam dong;Gustave Le Bon;Tam ly;4;1895
-B037;Di tim le song;Viktor E. Frankl;Tam ly;4;1946
-B038;De Men phieu luu ky;To Hoai;Thieu nhi;8;1941
-B039;Harry Potter va Hon da phu thuy;J.K. Rowling;Thieu nhi;5;1997
-B040;Hoang tu be;Antoine de Saint-Exupery;Thieu nhi;5;1943
-B041;English Grammar in Use;Raymond Murphy;Ngoai ngu;5;1985
-B042;Minna no Nihongo I;3A Corporation;Ngoai ngu;3;1998
-B043;Toan roi rac va ung dung;Kenneth H. Rosen;Toan hoc;5;2012
-B044;Cau chuyen nghe thuat;E. H. Gombrich;Nghe thuat;2;1950
-B045;Tai sao chung ta ngu;Matthew Walker;Suc khoe;3;2017
+B014;Atomic Habits;James Clear;Kỹ năng;9;2018
+B015;7 Thói quen của người thành đạt;Stephen R. Covey;Kỹ năng;6;1989
+B016;Tư duy nhanh và chậm;Daniel Kahneman;Kỹ năng;4;2011
+B017;Nghĩ giàu và làm giàu;Napoleon Hill;Kỹ năng;7;1937
+B018;Mắt biếc;Nguyễn Nhật Ánh;Tiểu thuyết;6;1990
+B019;Cho tôi xin một vé đi tuổi thơ;Nguyễn Nhật Ánh;Tiểu thuyết;7;2008
+B020;1984;George Orwell;Tiểu thuyết;5;1949
+B021;Giết con chim nhại;Harper Lee;Tiểu thuyết;4;1960
+B022;Số đỏ;Vũ Trọng Phụng;Văn học;5;1936
+B023;Tắt đèn;Ngô Tất Tố;Văn học;6;1939
+B024;Truyện Kiều;Nguyễn Du;Văn học;8;1820
+B025;Nhật ký trong tù;Hồ Chí Minh;Văn học;3;1960
+B026;Lược sử thời gian;Stephen Hawking;Khoa học;4;1988
+B027;Cosmos;Carl Sagan;Khoa học;3;1980
+B028;Nguồn gốc các loài;Charles Darwin;Khoa học;0;1859
+B029;Sapiens: Lược sử loài người;Yuval Noah Harari;Lịch sử;6;2011
+B030;Việt Nam sử lược;Trần Trọng Kim;Lịch sử;4;1920
+B031;Súng, vi trùng và thép;Jared Diamond;Lịch sử;2;1997
+B032;Cha giàu cha nghèo;Robert T. Kiyosaki;Kinh tế;8;1997
+B033;Nhà đầu tư thông minh;Benjamin Graham;Kinh tế;4;1949
+B034;Của cải của các dân tộc;Adam Smith;Kinh tế;0;1776
+B035;Khởi nghiệp tinh gọn;Eric Ries;Kinh tế;4;2011
+B036;Tâm lý học đám đông;Gustave Le Bon;Tâm lý;4;1895
+B037;Đi tìm lẽ sống;Viktor E. Frankl;Tâm lý;4;1946
+B038;Dế Mèn phiêu lưu ký;Tô Hoài;Thiếu nhi;8;1941
+B039;Harry Potter và Hòn đá phù thủy;J.K. Rowling;Thiếu nhi;5;1997
+B040;Hoàng tử bé;Antoine de Saint-Exupery;Thiếu nhi;5;1943
+B041;English Grammar in Use;Raymond Murphy;Ngoại ngữ;5;1985
+B042;Minna no Nihongo I;3A Corporation;Ngoại ngữ;3;1998
+B043;Toán rời rạc và ứng dụng;Kenneth H. Rosen;Toán học;5;2012
+B044;Câu chuyện nghệ thuật;E. H. Gombrich;Nghệ thuật;2;1950
+B045;Tại sao chúng ta ngủ;Matthew Walker;Sức khỏe;3;2017
