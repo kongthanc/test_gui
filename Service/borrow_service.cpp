@@ -278,7 +278,7 @@ int borrow_service::count_active_borrows_by_user(std::string user_id) const {
     node<borrow>* curr = borrow_list.get_head();
     while (curr != nullptr) {
         borrow b = curr->get_data();
-        if (b.get_user_id() == user_id && b.get_status() != "Da tra") {
+        if (b.get_user_id() == user_id && (b.get_status() == "Dang muon" || b.get_status() == "Qua han")) {
             count++;
         }
         curr = curr->get_next();
@@ -296,4 +296,11 @@ int borrow_service::count_borrows_by_book(std::string book_id) const {
         curr = curr->get_next();
     }
     return count;
+}
+// --- LƯU VẾT PHIẾU BỊ TỪ CHỐI VÀO LỊCH SỬ ---
+void borrow_service::log_rejected_request(borrow b) {
+    b.set_status("Tu choi"); // Đổi trạng thái từ "Cho duyet" sang "Tu choi"
+    borrow_list.push_back(b);
+    borrow_index.insert(b.get_id(), borrow_list.get_tail());
+    save_data(); // Ghi ngay xuống file borrow.txt
 }

@@ -49,21 +49,19 @@ void library_controller::save_requests() {
     std::ofstream file(request_file, std::ios::trunc);
     if (!file.is_open()) return;
 
-    queue<borrow> temp_queue;
-    while (!book_request_queue.is_empty()) {
+    int size = book_request_queue.get_size();
+    for (int i = 0; i < size; i++) {
         borrow req = book_request_queue.front();
         book_request_queue.pop();
+        
         file << req.get_id() << ";"
              << req.get_book_id() << ";"
              << req.get_user_id() << ";"
              << req.get_borrow_date() << ";"
              << req.get_due_date() << ";"
              << req.get_status() << "\n";
-        temp_queue.push(req);
-    }
-    while (!temp_queue.is_empty()) {
-        book_request_queue.push(temp_queue.front());
-        temp_queue.pop();
+             
+        book_request_queue.push(req); // Đẩy lại xuống cuối hàng, xoay vòng đúng 1 lượt
     }
     file.close();
 }
@@ -252,8 +250,15 @@ bool library_controller::approve_next_request() {
 
 bool library_controller::reject_next_request() {
     if (book_request_queue.is_empty()) return false;
+    // 1. Lấy thông tin phiếu đang đứng đầu hàng đợi
+    borrow req = book_request_queue.front(); 
+    
+    // 2. Loại bỏ khỏi hàng đợi chờ duyệt
     book_request_queue.pop();
     save_requests(); 
+    
+    // 3. Đẩy sang Lịch sử mượn với trạng thái "Tu choi"
+    br_service.log_rejected_request(req);
     return true;
 }
 
@@ -447,6 +452,10 @@ bool library_controller::undo_last_book_action(std::string& out_message) {
         out_message = "Da hoan tac: Xoa sach vua them [" + last.get_target_id() + "]";
     } else if (last.get_action_type() == "DELETE") {
         success = b_service.add_book(last.get_backup_data());
+        // Phục hồi vị trí mặc định để không bị trắng cột Kệ Sách
+        std::string lower_id = search_algo::to_lower(search_algo::trim(last.get_target_id()));
+        position_list.push_back(book_location(lower_id, last.get_backup_data().get_category(), "Da khoi phuc"));
+        save_positions();
         out_message = "Da hoan tac: Khoi phuc sach vua xoa [" + last.get_target_id() + "]";
     } else if (last.get_action_type() == "UPDATE") {
         success = b_service.update_book(last.get_target_id(), last.get_backup_data());

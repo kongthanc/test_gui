@@ -59,11 +59,9 @@ public:
     // ================= 2. NGHIỆP VỤ SÁCH (BOOK) =================
     linked_list<book> search_books(std::string keyword);
     linked_list<book> get_related_books(std::string category, std::string exclude_book_id);
-    linked_list<book> filter_books_multi(std::string title, std::string author, std::string category, int year = 0);
-    linked_list<book> get_graph_recommendations(std::string book_id);
-    std::string get_hot_category();
+   linked_list<book> get_recommended_books(std::string author, std::string category, std::string exclude_book_id);
     int get_user_active_borrow_count(std::string user_id) const;
-    bool add_new_book(std::string id, std::string title, std::string author, std::string category, int qty, int year);
+    bool add_new_book(std::string id, std::string title, std::string author, std::string category, int qty, int year,std::string shelf);
     bool update_book_info(std::string old_id, book book_n);
     bool delete_book(std::string id);
     node<book>* get_book_by_id(std::string id);
