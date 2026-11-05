@@ -2,6 +2,7 @@
 #include "GUI/login.h"
 #include "GUI/library_gui.h"
 #include "GUI/ui_font.h"
+#include "GUI/windows_text_input.h"
 #include <vector>
 
 Font app_font;
@@ -9,6 +10,9 @@ Font app_font;
 int main() {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(1220, 750, "PBL2 - Quản lý thư viện");
+#ifdef _WIN32
+    windows_text_input::install();
+#endif
     SetWindowMinSize(900, 600);
     SetTargetFPS(60);
 
@@ -49,6 +53,9 @@ int main() {
     }
 
     if (custom_font) UnloadFont(app_font);
+#ifdef _WIN32
+    windows_text_input::uninstall();
+#endif
     CloseWindow();
     return 0;
 }
