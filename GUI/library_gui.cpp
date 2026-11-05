@@ -1,5 +1,6 @@
 #include "library_gui.h"
 #include "raylib.h"
+#include "windows_text_input.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -16,6 +17,78 @@ namespace {
     const int CONTENT_X = 305;
     const int CONTENT_W = 890;
     const int ROWS_PER_PAGE = 6;
+    const int BOOKS_PER_PAGE = 4;
+    const int SUGGESTIONS_PER_PAGE = 4;
+
+    Color page_background = {245, 247, 251, 255};
+    Color panel_background = {255, 255, 255, 255};
+    Color sidebar_background = {235, 239, 246, 255};
+
+    void draw_panel() {
+        DrawRectangleRounded(
+            {(float)CONTENT_X, 102.0f, (float)CONTENT_W, 578.0f},
+            0.03f, 8, panel_background);
+    }
+
+    void draw_table_header(const char* const* headers, const int* columns,
+                           int count, int y) {
+        DrawRectangle(CONTENT_X + 15, y, CONTENT_W - 30, 38, DARKBLUE);
+        for (int i = 0; i < count; ++i) {
+            DrawText(headers[i], columns[i], y + 9, 18, WHITE);
+        }
+    }
+
+    void draw_paging_hint(int page, int total, int y,
+                          int rows_per_page = ROWS_PER_PAGE) {
+        int total_pages = total == 0 ? 1 :
+            (total + rows_per_page - 1) / rows_per_page;
+        DrawText(TextFormat("Trang %d/%d", page + 1, total_pages),
+                 CONTENT_X + 395, y, 19, DARKGRAY);
+    }
+
+    std::string display_role(const std::string& role) {
+        if (role == "manager") return "Quản lý";
+        if (role == "admin") return "Quản trị viên";
+        return "Độc giả";
+    }
+
+    std::string display_status(const std::string& status) {
+        if (status == "Da tra") return "Đã trả";
+        if (status == "Dang muon") return "Đang mượn";
+        if (status == "Qua han") return "Quá hạn";
+        return status;
+    }
+
+    std::string display_session(const std::string& session) {
+        if (session == "sang") return "Sáng";
+        if (session == "chieu") return "Chiều";
+        return session;
+    }
+
+    std::string normalize_session(const char* value) {
+        if (value == nullptr) return "";
+        std::string session(value);
+        if (session == "sáng" || session == "Sáng" ||
+            session == "SANG" || session == "Sang" || session == "sang") {
+            return "sang";
+        }
+        if (session == "chiều" || session == "Chiều" ||
+            session == "CHIEU" || session == "Chieu" || session == "chieu") {
+            return "chieu";
+        }
+        return "";
+    }
+
+    std::string format_date(const date& value) {
+        return std::to_string(value.get_day()) + "/" +
+               std::to_string(value.get_month()) + "/" +
+               std::to_string(value.get_year());
+    }
+
+    std::string display_shelf(const std::string& shelf) {
+        if (shelf.empty()) return "Chưa xếp kệ";
+        return shelf;
+    }
 
     void append_utf8(char* destination, int capacity, const char* source) {
         if (destination == nullptr || source == nullptr || capacity <= 1) return;
@@ -83,232 +156,9 @@ namespace {
         value[length] = '\0';
     }
 
-    int key_to_ascii(int key, bool shift) {
-        if (key >= KEY_A && key <= KEY_Z) {
-            int c = 'a' + (key - KEY_A);
-            return shift ? c - 32 : c;
-        }
-        if (key >= KEY_ZERO && key <= KEY_NINE) {
-            return '0' + (key - KEY_ZERO);
-        }
-        if (key == KEY_SPACE) return ' ';
-        if (key == KEY_MINUS) return shift ? '_' : '-';
-        if (key == KEY_EQUAL) return shift ? '+' : '=';
-        if (key == KEY_PERIOD) return '.';
-        if (key == KEY_COMMA) return ',';
-        if (key == KEY_SLASH) return shift ? '?' : '/';
-        if (key == KEY_SEMICOLON) return shift ? ':' : ';';
-        if (key == KEY_APOSTROPHE) return shift ? '"' : '\'';
-        if (key == KEY_LEFT_BRACKET) return shift ? '{' : '[';
-        if (key == KEY_RIGHT_BRACKET) return shift ? '}' : ']';
-        if (key == KEY_BACKSLASH) return shift ? '|' : '\\';
-        return 0;
-    }
 
-    void push_utf8(std::string& out, int cp) {
-        int count = 0;
-        const char* encoded = CodepointToUTF8(cp, &count);
-        if (encoded && count > 0) out.append(encoded, count);
-    }
 
-    bool is_vowel(char c) {
-        return c == 'a' || c == 'e' || c == 'i' || c == 'o' || c == 'u' || c == 'y';
-    }
 
-    int shaped_vowel(char c, char shape) {
-        if (c == 'a' && shape == 'a') return 0x00E2;
-        if (c == 'a' && shape == 'w') return 0x0103;
-        if (c == 'e' && shape == 'e') return 0x00EA;
-        if (c == 'o' && shape == 'o') return 0x00F4;
-        if (c == 'o' && shape == 'w') return 0x01A1;
-        if (c == 'u' && shape == 'w') return 0x01B0;
-        if (c == 'd' && shape == 'd') return 0x0111;
-        return c;
-    }
-
-    int tone_vowel(int cp, int tone) {
-        // tone: 1 sac, 2 huyen, 3 hoi, 4 nga, 5 nang
-        static const int bases[] = {'a','e','i','o','u','y',0x0103,0x00E2,0x00EA,0x00F4,0x01A1,0x01B0};
-        static const int table[][5] = {
-            {0x00E1,0x00E0,0x1EA3,0x00E3,0x1EA1},
-            {0x00E9,0x00E8,0x1EBB,0x1EBD,0x1EB9},
-            {0x00ED,0x00EC,0x1EC9,0x0129,0x1ECB},
-            {0x00F3,0x00F2,0x1ECF,0x00F5,0x1ECD},
-            {0x00FA,0x00F9,0x1EE7,0x0169,0x1EE5},
-            {0x00FD,0x1EF3,0x1EF7,0x1EF9,0x1EF5},
-            {0x1EAF,0x1EB1,0x1EB3,0x1EB5,0x1EB7},
-            {0x1EA5,0x1EA7,0x1EA9,0x1EAB,0x1EAD},
-            {0x1EBF,0x1EC1,0x1EC3,0x1EC5,0x1EC7},
-            {0x1ED1,0x1ED3,0x1ED5,0x1ED7,0x1ED9},
-            {0x1EDB,0x1EDD,0x1EDF,0x1EE1,0x1EE3},
-            {0x1EE9,0x1EEB,0x1EED,0x1EEF,0x1EF1}
-        };
-        for (int i = 0; i < 12; ++i) if (cp == bases[i]) return table[i][tone - 1];
-        return cp;
-    }
-
-    std::string convert_telex_word(const std::string& raw) {
-        std::vector<int> chars;
-        int tone = 0;
-        for (size_t i = 0; i < raw.size(); ++i) {
-            char c = raw[i];
-            if (c >= 'A' && c <= 'Z') c = (char)(c + 32);
-            if (c == 's' || c == 'f' || c == 'r' || c == 'x' || c == 'j') {
-                bool has_vowel = false;
-                for (int v : chars) if (is_vowel((char)v) || v == 0x0103 || v == 0x00E2 || v == 0x00EA || v == 0x00F4 || v == 0x01A1 || v == 0x01B0) has_vowel = true;
-                if (has_vowel && i == raw.size() - 1) {
-                    tone = c == 's' ? 1 : c == 'f' ? 2 : c == 'r' ? 3 : c == 'x' ? 4 : 5;
-                    continue;
-                }
-            }
-            if (c == 'z' && i == raw.size() - 1 && tone == 0) continue;
-            if (!chars.empty()) {
-                int last = chars.back();
-                if (c == 'w' && (last == 'a' || last == 'o' || last == 'u')) {
-                    chars.back() = shaped_vowel((char)last, 'w');
-                    continue;
-                }
-                if ((c == 'a' && last == 'a') || (c == 'e' && last == 'e') || (c == 'o' && last == 'o') || (c == 'd' && last == 'd')) {
-                    chars.back() = shaped_vowel(c, c);
-                    continue;
-                }
-                if (c == 'w' && last == 'u') { chars.back() = 0x01B0; continue; }
-            }
-            chars.push_back((unsigned char)c);
-        }
-
-        int vowel_positions[8];
-        int vowel_count = 0;
-        bool skip_u = chars.size() > 1 && chars[0] == 'q' && chars[1] == 'u';
-        bool skip_i = chars.size() > 2 && chars[0] == 'g' && chars[1] == 'i';
-        for (int i = 0; i < (int)chars.size(); ++i) {
-            int c = chars[i];
-            if ((skip_u && i == 1) || (skip_i && i == 1)) continue;
-            if (is_vowel((char)c) || c == 0x0103 || c == 0x00E2 || c == 0x00EA || c == 0x00F4 || c == 0x01A1 || c == 0x01B0) {
-                if (vowel_count < 8) vowel_positions[vowel_count++] = i;
-            }
-        }
-        if (tone && vowel_count) {
-            int target = vowel_positions[vowel_count - 1];
-            if (vowel_count >= 3) {
-                target = vowel_positions[vowel_count / 2];
-                if (chars[vowel_positions[vowel_count - 1]] == 0x00EA) target = vowel_positions[vowel_count - 1];
-            } else if (vowel_count == 2) {
-                int first = chars[vowel_positions[0]], second = chars[vowel_positions[1]];
-                if ((first == 'i' && second == 'a') || (first == 'u' && second == 'a') || (first == 'u' && second == 0x01A1)) target = vowel_positions[0];
-            }
-            chars[target] = tone_vowel(chars[target], tone);
-        }
-
-        if (!raw.empty() && raw[0] >= 'A' && raw[0] <= 'Z' && !chars.empty()) {
-            if (chars[0] >= 'a' && chars[0] <= 'z') chars[0] -= 32;
-            static const int lower[] = {'a','e','i','o','u','y',0x0103,0x00E2,0x00EA,0x00F4,0x01A1,0x01B0,0x0111};
-            static const int upper[] = {'A','E','I','O','U','Y',0x0102,0x00C2,0x00CA,0x00D4,0x01A0,0x01AF,0x0110};
-            for (int i = 0; i < 13; ++i) {
-                if (chars[0] == lower[i]) { chars[0] = upper[i]; break; }
-            }
-            // Cac nguyen am da co dau thanh: doi sang ma Unicode viet hoa tuong ung.
-            static const int lower_tone[][5] = {
-                {0x00E1,0x00E0,0x1EA3,0x00E3,0x1EA1}, {0x00E9,0x00E8,0x1EBB,0x1EBD,0x1EB9},
-                {0x00ED,0x00EC,0x1EC9,0x0129,0x1ECB}, {0x00F3,0x00F2,0x1ECF,0x00F5,0x1ECD},
-                {0x00FA,0x00F9,0x1EE7,0x0169,0x1EE5}, {0x00FD,0x1EF3,0x1EF7,0x1EF9,0x1EF5},
-                {0x1EAF,0x1EB1,0x1EB3,0x1EB5,0x1EB7}, {0x1EA5,0x1EA7,0x1EA9,0x1EAB,0x1EAD},
-                {0x1EBF,0x1EC1,0x1EC3,0x1EC5,0x1EC7}, {0x1ED1,0x1ED3,0x1ED5,0x1ED7,0x1ED9},
-                {0x1EDB,0x1EDD,0x1EDF,0x1EE1,0x1EE3}, {0x1EE9,0x1EEB,0x1EED,0x1EEF,0x1EF1}
-            };
-            static const int upper_tone[][5] = {
-                {0x00C1,0x00C0,0x1EA2,0x00C3,0x1EA0}, {0x00C9,0x00C8,0x1EBA,0x1EBC,0x1EB8},
-                {0x00CD,0x00CC,0x1EC8,0x0128,0x1ECA}, {0x00D3,0x00D2,0x1ECE,0x00D5,0x1ECC},
-                {0x00DA,0x00D9,0x1EE6,0x0168,0x1EE4}, {0x00DD,0x1EF2,0x1EF6,0x1EF8,0x1EF4},
-                {0x1EAE,0x1EB0,0x1EB2,0x1EB4,0x1EB6}, {0x1EA4,0x1EA6,0x1EA8,0x1EAA,0x1EAC},
-                {0x1EBE,0x1EC0,0x1EC2,0x1EC4,0x1EC6}, {0x1ED0,0x1ED2,0x1ED4,0x1ED6,0x1ED8},
-                {0x1EDA,0x1EDC,0x1EDE,0x1EE0,0x1EE2}, {0x1EE8,0x1EEA,0x1EEC,0x1EEE,0x1EF0}
-            };
-            for (int i = 0; i < 12; ++i) for (int j = 0; j < 5; ++j)
-                if (chars[0] == lower_tone[i][j]) chars[0] = upper_tone[i][j];
-        }
-
-        std::string out;
-        for (int cp : chars) push_utf8(out, cp);
-        return out;
-    }
-
-    Color page_background = {245, 247, 251, 255};
-    Color panel_background = {255, 255, 255, 255};
-    Color sidebar_background = {235, 239, 246, 255};
-
-    void draw_panel() {
-        DrawRectangleRounded(
-            {(float)CONTENT_X, 102.0f, (float)CONTENT_W, 578.0f},
-            0.03f, 8, panel_background);
-    }
-
-    void draw_table_header(const char* const* headers, const int* columns,
-                           int count, int y) {
-        DrawRectangle(CONTENT_X + 15, y, CONTENT_W - 30, 38, DARKBLUE);
-        for (int i = 0; i < count; ++i) {
-            DrawText(headers[i], columns[i], y + 9, 18, WHITE);
-        }
-    }
-
-    void draw_paging_hint(int page, int total, int y) {
-        int total_pages = total == 0 ? 1 : (total + ROWS_PER_PAGE - 1) / ROWS_PER_PAGE;
-        DrawText(TextFormat("Trang %d/%d", page + 1, total_pages),
-                 CONTENT_X + 395, y, 19, DARKGRAY);
-    }
-
-    // ---- Cac ham doi chuoi luu trong file du lieu (khong dau) sang tieng Viet co dau.
-    // ---- Chi dung de HIEN THI, du lieu goc va logic nghiep vu khong thay doi.
-    std::string display_status(const std::string& status) {
-        if (status == "Dang muon") return "Đang mượn";
-        if (status == "Da tra") return "Đã trả";
-        if (status == "Qua han") return "Quá hạn";
-        if (status == "Cho duyet") return "Chờ duyệt";
-        return status;
-    }
-
-    std::string display_session(const std::string& session) {
-        if (session == "sang") return "Sáng";
-        if (session == "chieu") return "Chiều";
-        return session;
-    }
-
-    std::string display_role(const std::string& role) {
-        if (role == "manager") return "Quản lý";
-        if (role == "admin") return "Quản trị viên";
-        if (role == "user") return "Độc giả";
-        return role;
-    }
-
-    std::string display_shelf(const std::string& shelf) {
-        if (shelf == "Chua xep ke") return "Chưa xếp kệ";
-        return shelf;
-    }
-
-    std::string format_date(const date& d) {
-        return std::to_string(d.get_day()) + "/" +
-               std::to_string(d.get_month()) + "/" +
-               std::to_string(d.get_year());
-    }
-
-    // Chap nhan "sang"/"sáng" va "chieu"/"chiều"; tra ve gia tri luu trong he thong.
-    std::string normalize_session(const char* text) {
-        std::string s = text == nullptr ? "" : text;
-        size_t start = 0;
-        while (start < s.size() && s[start] == ' ') ++start;
-        size_t end = s.size();
-        while (end > start && s[end - 1] == ' ') --end;
-        s = s.substr(start, end - start);
-
-        std::string lower;
-        for (size_t i = 0; i < s.size(); ++i) {
-            char c = s[i];
-            lower += (c >= 'A' && c <= 'Z') ? (char)(c + 32) : c;
-        }
-        if (lower == "sang" || lower == "sáng") return "sang";
-        if (lower == "chieu" || lower == "chiều") return "chieu";
-        return "";
-    }
 }
 
 library_gui::library_gui(library_controller& controller)
@@ -321,12 +171,9 @@ void library_gui::reset() {
     history.clear();
     logout_requested = false;
     list_page = 0;
+    suggestion_page = 0;
     active_field = nullptr;
     active_field_capacity = 0;
-    telex_raw_word.clear();
-    telex_field = nullptr;
-    telex_word_start = 0;
-    telex_enabled = true;
     message.clear();
     message_is_error = false;
     showing_related = false;
@@ -356,10 +203,8 @@ void library_gui::clear_fields() {
     field_g[0] = '\0';
     active_field = nullptr;
     active_field_capacity = 0;
-    telex_raw_word.clear();
-    telex_field = nullptr;
-    telex_word_start = 0;
     list_page = 0;
+    suggestion_page = 0;
 }
 
 void library_gui::switch_page(page next_page) {
@@ -505,59 +350,25 @@ bool library_gui::read_date(const char* text, date& value) const {
 void library_gui::collect_text_input() {
     if (input_locked || active_field == nullptr || active_field_capacity <= 1) return;
 
-    if (IsKeyPressed(KEY_F2)) {
-        telex_enabled = !telex_enabled;
-        telex_raw_word.clear();
-        telex_field = nullptr;
-    }
-
-    if (telex_field != active_field) {
-        telex_field = active_field;
-        telex_raw_word.clear();
-        telex_word_start = (int)std::strlen(active_field);
-    }
-
-    bool shift = IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT);
     bool control = IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL);
-    int key = GetKeyPressed();
-    while (key > 0) {
-        if (control && (key == KEY_V)) {
-            const char* clipboard = GetClipboardText();
-            if (clipboard) append_utf8(active_field, active_field_capacity, clipboard);
-            telex_raw_word.clear();
-            telex_word_start = (int)std::strlen(active_field);
-        } else if (key == KEY_BACKSPACE) {
-            if (telex_enabled && !telex_raw_word.empty() && telex_field == active_field) {
-                telex_raw_word.pop_back();
-                active_field[telex_word_start] = '\0';
-                std::string converted = convert_telex_word(telex_raw_word);
-                append_utf8(active_field, active_field_capacity, converted.c_str());
-                if (telex_raw_word.empty()) telex_word_start = (int)std::strlen(active_field);
-            } else {
-                erase_last_utf8_character(active_field);
-                telex_word_start = (int)std::strlen(active_field);
-            }
-        } else if (key == KEY_F2) {
-            // Da xu ly phim chuyen che do o tren.
-        } else {
-            int c = key_to_ascii(key, shift);
-            if (c != 0) {
-                if (telex_enabled && c >= 'A' && c <= 'Z') c += 32;
-                if (telex_enabled && c >= 'a' && c <= 'z') {
-                    if (telex_raw_word.empty()) telex_word_start = (int)std::strlen(active_field);
-                    telex_raw_word += (char)c;
-                    active_field[telex_word_start] = '\0';
-                    std::string converted = convert_telex_word(telex_raw_word);
-                    append_utf8(active_field, active_field_capacity, converted.c_str());
-                } else {
-                    telex_raw_word.clear();
-                    char text[2] = {(char)c, '\0'};
-                    append_utf8(active_field, active_field_capacity, text);
-                    telex_word_start = (int)std::strlen(active_field);
-                }
-            }
+
+    // Paste UTF-8 truc tiep tu clipboard.
+    if (control && IsKeyPressed(KEY_V)) {
+        const char* clipboard = GetClipboardText();
+        if (clipboard != nullptr) {
+            append_utf8(active_field, active_field_capacity, clipboard);
         }
-        key = GetKeyPressed();
+        return;
+    }
+
+    // Xu ly su kien theo dung thu tu Windows gui, tranh mat thu tu Telex.
+    windows_text_input::input_event event;
+    while (windows_text_input::pop(event)) {
+        if (event.type == windows_text_input::event_type::backspace) {
+            erase_last_utf8_character(active_field);
+        } else if (event.type == windows_text_input::event_type::character) {
+            append_codepoint(active_field, active_field_capacity, event.codepoint);
+        }
     }
 }
 
@@ -575,9 +386,6 @@ void library_gui::draw_input(Rectangle box, const char* label,
         IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
         active_field = value;
         active_field_capacity = capacity;
-        telex_raw_word.clear();
-        telex_field = value;
-        telex_word_start = (int)std::strlen(value);
     }
 }
 
@@ -727,11 +535,13 @@ void library_gui::draw_books(const std::string& role, bool user_search) {
                field_a, sizeof(field_a));
     if (draw_button({CONTENT_X + 375, 185, 95, 44}, "Tìm")) {
         list_page = 0;
+        suggestion_page = 0;
         selected_book_id.clear();
     }
     if (draw_button({CONTENT_X + 485, 185, 110, 44}, "Tất cả", GRAY)) {
         field_a[0] = '\0';
         list_page = 0;
+        suggestion_page = 0;
         selected_book_id.clear();
     }
 
@@ -752,7 +562,7 @@ void library_gui::draw_books(const std::string& role, bool user_search) {
 
     linked_list<book> books = controller.search_books(field_a);
     int total = books.get_size();
-    int page_count = total == 0 ? 1 : (total + ROWS_PER_PAGE - 1) / ROWS_PER_PAGE;
+    int page_count = total == 0 ? 1 : (total + BOOKS_PER_PAGE - 1) / BOOKS_PER_PAGE;
     if (list_page >= page_count) list_page = page_count - 1;
 
     DrawText("Kết quả tìm kiếm", 325, 250, 18, DARKGRAY);
@@ -761,11 +571,11 @@ void library_gui::draw_books(const std::string& role, bool user_search) {
     draw_table_header(headers, columns, 4, 278);
 
     node<book>* current = books.get_head();
-    int skip = list_page * ROWS_PER_PAGE;
+    int skip = list_page * BOOKS_PER_PAGE;
     while (current != nullptr && skip-- > 0) current = current->get_next();
 
     int row = 0;
-    while (current != nullptr && row < 4) {
+    while (current != nullptr && row < BOOKS_PER_PAGE) {
         book item = current->get_data();
         int y = 318 + row * 34;
         Rectangle row_box = {CONTENT_X + 15.0f, (float)y,
@@ -780,6 +590,7 @@ void library_gui::draw_books(const std::string& role, bool user_search) {
         DrawText(item.get_category().c_str(), 865, y + 8, 15, DARKGRAY);
         if (CheckCollisionPointRec(GetMousePosition(), row_box) &&
             IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+            if (selected_book_id != item.get_id()) suggestion_page = 0;
             selected_book_id = item.get_id();
         }
         current = current->get_next();
@@ -794,7 +605,7 @@ void library_gui::draw_books(const std::string& role, bool user_search) {
         list_page > 0) --list_page;
     if (draw_button({CONTENT_X + 550, 458, 90, 34}, "Sau", GRAY) &&
         list_page + 1 < page_count) ++list_page;
-    draw_paging_hint(list_page, total, 466);
+    draw_paging_hint(list_page, total, 466, BOOKS_PER_PAGE);
 
     DrawText("SÁCH GỢI Ý", 325, 505, 19, DARKGREEN);
     if (selected_book_id.empty()) {
@@ -821,25 +632,48 @@ void library_gui::draw_books(const std::string& role, bool user_search) {
         return;
     }
 
+    int suggestion_total = suggestions.get_size();
+    int suggestion_page_count = suggestion_total == 0 ? 1 :
+        (suggestion_total + SUGGESTIONS_PER_PAGE - 1) / SUGGESTIONS_PER_PAGE;
+    if (suggestion_page >= suggestion_page_count) {
+        suggestion_page = suggestion_page_count - 1;
+    }
+
     node<book>* suggest = suggestions.get_head();
+    int suggestion_skip = suggestion_page * SUGGESTIONS_PER_PAGE;
+    while (suggest != nullptr && suggestion_skip-- > 0) {
+        suggest = suggest->get_next();
+    }
+
     int suggestion_row = 0;
-    while (suggest != nullptr && suggestion_row < 4) {
+    while (suggest != nullptr && suggestion_row < SUGGESTIONS_PER_PAGE) {
         book item = suggest->get_data();
-        int y = 535 + suggestion_row * 30;
-        DrawRectangle(CONTENT_X + 15, y, CONTENT_W - 30, 28,
+        int y = 532 + suggestion_row * 28;
+        DrawRectangle(CONTENT_X + 15, y, CONTENT_W - 30, 26,
                       suggestion_row % 2 == 0 ? Color{239, 248, 241, 255}
                                               : Color{229, 242, 233, 255});
-        DrawText(item.get_title().c_str(), 330, y + 7, 15, DARKGRAY);
+        DrawText(item.get_title().c_str(), 330, y + 6, 15, DARKGRAY);
         bool same_author = item.get_author() == source.get_author();
         bool same_category = item.get_category() == source.get_category();
         std::string reason = same_author && same_category
                                  ? "Cùng tác giả + thể loại"
                                  : same_author ? "Cùng tác giả"
                                                : "Cùng thể loại";
-        DrawText(reason.c_str(), 865, y + 7, 15, DARKGREEN);
+        DrawText(reason.c_str(), 865, y + 6, 15, DARKGREEN);
         suggest = suggest->get_next();
         ++suggestion_row;
     }
+
+    if (draw_button({CONTENT_X + 230, 648, 90, 28}, "Trước", GRAY) &&
+        suggestion_page > 0) {
+        --suggestion_page;
+    }
+    if (draw_button({CONTENT_X + 550, 648, 90, 28}, "Sau", GRAY) &&
+        suggestion_page + 1 < suggestion_page_count) {
+        ++suggestion_page;
+    }
+    draw_paging_hint(suggestion_page, suggestion_total, 654,
+                     SUGGESTIONS_PER_PAGE);
 }
 
 void library_gui::draw_book_form(bool editing) {
@@ -1698,8 +1532,6 @@ void library_gui::draw(const std::string& role) {
 
     collect_text_input();
     draw_shell(role);
-    DrawText(telex_enabled ? "Bo go Telex: BAT (F2 de tat)" : "Bo go Telex: TAT (F2 de bat)",
-             CONTENT_X + 20, 84, 16, telex_enabled ? DARKGREEN : GRAY);
     draw_sidebar(role);
 
     switch (current_page) {

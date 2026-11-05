@@ -1,8 +1,38 @@
 #include "login.h"
 #include "raylib.h"
+#include "windows_text_input.h"
 #include <cstring>
 #include "ui_font.h"
 #include "ui_layout.h"
+
+namespace {
+    void append_codepoint(char* destination, int capacity, int codepoint) {
+        if (destination == nullptr || codepoint < 32 || codepoint > 0x10FFFF ||
+            (codepoint >= 0xD800 && codepoint <= 0xDFFF)) return;
+
+        int byte_count = 0;
+        const char* encoded = CodepointToUTF8(codepoint, &byte_count);
+        if (encoded == nullptr || byte_count <= 0) return;
+
+        int length = (int)strlen(destination);
+        if (length + byte_count < capacity) {
+            memcpy(destination + length, encoded, byte_count);
+            destination[length + byte_count] = '\0';
+        }
+    }
+
+    void erase_last_utf8_character(char* value) {
+        int length = (int)strlen(value);
+        if (length == 0) return;
+
+        --length;
+        while (length > 0 &&
+               (((unsigned char)value[length]) & 0xC0) == 0x80) {
+            --length;
+        }
+        value[length] = '\0';
+    }
+}
 
 login_screen::login_screen(library_controller& c)
     : controller(c), focus_id(true), focus_password(false),
@@ -53,34 +83,15 @@ void login_screen::handle_input() {
         return;
     }
 
-    int key = GetCharPressed();
-
-    while (key > 0) {
-        if (key >= 32 && key <= 126) {
-            if (focus_id) {
-                int len = (int)strlen(id);
-                if (len < (int)sizeof(id) - 1) {
-                    id[len] = (char)key;
-                    id[len + 1] = '\0';
-                }
-            } else if (focus_password) {
-                int len = (int)strlen(password);
-                if (len < (int)sizeof(password) - 1) {
-                    password[len] = (char)key;
-                    password[len + 1] = '\0';
-                }
-            }
-        }
-        key = GetCharPressed();
-    }
-
-    if (IsKeyPressed(KEY_BACKSPACE)) {
-        if (focus_id) {
-            int len = (int)strlen(id);
-            if (len > 0) id[len - 1] = '\0';
-        } else if (focus_password) {
-            int len = (int)strlen(password);
-            if (len > 0) password[len - 1] = '\0';
+    // Doc su kien ky tu va Backspace theo dung thu tu Windows gui den cua so.
+    windows_text_input::input_event event;
+    while (windows_text_input::pop(event)) {
+        if (event.type == windows_text_input::event_type::backspace) {
+            if (focus_id) erase_last_utf8_character(id);
+            else if (focus_password) erase_last_utf8_character(password);
+        } else if (event.type == windows_text_input::event_type::character) {
+            if (focus_id) append_codepoint(id, sizeof(id), event.codepoint);
+            else if (focus_password) append_codepoint(password, sizeof(password), event.codepoint);
         }
     }
 }
