@@ -105,14 +105,56 @@ linked_list<book> book_service::search_books(std::string keyword) {
         book b = curr->get_data();
         
         // Gá»i thuáº­t toÃ¡n xá»­ lÃ½ chuá»—i Ä‘á»ƒ soi vÃ o TÃªn, TÃ¡c giáº£, vÃ  Thá»ƒ loáº¡i
-        if (search_algo::contains(b.get_title(), keyword) || 
-            search_algo::contains(b.get_author(), keyword) ||
-            search_algo::contains(b.get_category(), keyword)) {
+        if (search_algo::contains(b.get_id(), keyword) ||
+            search_algo::contains(b.get_title(), keyword) ||
+            search_algo::contains(b.get_author(), keyword)) {
             
             result.push_back(b);
         }
         curr = curr->get_next();
     }
+    return result;
+}
+
+linked_list<book> book_service::get_recommended_books(
+    std::string author, std::string category, std::string exclude_book_id) {
+    linked_list<book> result;
+
+    // Ưu tiên sách cùng tác giả.
+    node<book>* current = book_list.get_head();
+    while (current != nullptr) {
+        book item = current->get_data();
+        if (item.get_id() != exclude_book_id &&
+            !author.empty() && item.get_author() == author) {
+            result.push_back(item);
+        }
+        current = current->get_next();
+    }
+
+    // Bổ sung sách cùng thể loại, không thêm trùng sách đã có.
+    current = book_list.get_head();
+    while (current != nullptr) {
+        book item = current->get_data();
+        bool already_added = false;
+
+        node<book>* added = result.get_head();
+        while (added != nullptr) {
+            if (added->get_data().get_id() == item.get_id()) {
+                already_added = true;
+                break;
+            }
+            added = added->get_next();
+        }
+
+        if (item.get_id() != exclude_book_id &&
+            !category.empty() &&
+            item.get_category() == category &&
+            !already_added) {
+            result.push_back(item);
+        }
+        current = current->get_next();
+    }
+
     return result;
 }
 
@@ -164,8 +206,7 @@ void book_service::parse_line(std::string line, book& b) {
         year = 0;
     }
     // Khá»Ÿi táº¡o Ä‘á»‘i tÆ°á»£ng book hoÃ n chá»‰nh
-    b = book(search_algo::trim(id), search_algo::trim(title), 
-             search_algo::trim(author), search_algo::trim(category), quantity, year);
+    b = book(id, title, author, category, quantity, year);
 }
 
 linked_list<book> book_service::filter_books(std::string title_kw, std::string author_kw, std::string category_kw, int year) {
