@@ -1,4 +1,3 @@
-
 #pragma once
 #include <string>
 #include <fstream>
@@ -11,6 +10,7 @@
 #include "../Structure/queue.h"
 #include "../Model/action_log.h"
 #include "../Structure/stack.h" 
+// Khai báo thêm Graph để dùng thuật toán gợi ý
 #include "../Structure/graph.h"
 #include "../Algorithm/graph_algo.h"
 
@@ -30,19 +30,19 @@ private:
     borrow_service br_service;
     shift_service s_service;
     
-    // HÃ ng Ä‘á»£i lÆ°u cÃ¡c yÃªu cáº§u Ä‘Äƒng kÃ½ mÆ°á»£n sÃ¡ch cá»§a Ä‘á»™c giáº£ (FIFO)
     queue<borrow> book_request_queue;
     std::string request_file;
-
     user* current_logged_in_user;
 
     void load_requests();
     void save_requests();
 
-    linked_list<book_location> position_list; // LÆ°u danh sÃ¡ch vá»‹ trÃ­ ká»‡
+    linked_list<book_location> position_list; 
     std::string position_file;
 
     void load_positions();
+    void save_positions(); // HÀM MỚI: Lưu vị trí kệ sách
+
     stack<action_log<book>> book_undo_stack;
     stack<action_log<user>> user_undo_stack;
     stack<action_log<borrow>> borrow_undo_stack;
@@ -51,37 +51,44 @@ public:
     library_controller();
     ~library_controller();
 
-    // ================= 1. QUáº¢N LÃ PHIÃŠN & PHÃ‚N QUYá»€N =================
+    // ================= 1. QUẢN LÝ PHIÊN & PHÂN QUYỀN =================
     bool login(std::string id, std::string password);
     void logout();
     user* get_current_user() const;
     std::string get_current_role() const;
 
-    // ================= 2. NGHIá»†P Vá»¤ SÃCH (BOOK) =================
+    // ================= 2. NGHIỆP VỤ SÁCH (BOOK) =================
     linked_list<book> search_books(std::string keyword);
     linked_list<book> get_related_books(std::string category, std::string exclude_book_id);
     linked_list<book> filter_books_multi(std::string title, std::string author, std::string category, int year = 0);
+    
+    // HÀM MỚI: Gợi ý sách bằng Đồ thị Graph BFS
     linked_list<book> get_graph_recommendations(std::string book_id);
+    
+    // HÀM MỚI: Tìm thể loại sách đang HOT nhất
     std::string get_hot_category();
-    int get_user_active_borrow_count(std::string user_id) const;
-    bool add_new_book(std::string id, std::string title, std::string author, std::string category, int qty, int year);
+    
+    // CẬP NHẬT: Thêm tham số kệ sách
+    bool add_new_book(std::string id, std::string title, std::string author, std::string category, int qty, int year, std::string shelf = "Chua xep ke");
     bool update_book_info(std::string old_id, book book_n);
     bool delete_book(std::string id);
     node<book>* get_book_by_id(std::string id);
     void sort_books(bool (*cmp)(book, book));
     
-    // Lá»c phiáº¿u mÆ°á»£n
+    // Lọc phiếu mượn
     linked_list<borrow> filter_borrows_by_date(date start_date, date end_date);
 
-    // ================= 3. NGHIá»†P Vá»¤ MÆ¯á»¢N - TRáº¢ (BORROW) =================
+    // ================= 3. NGHIỆP VỤ MƯỢN - TRẢ (BORROW) =================
     bool borrow_book(std::string borrow_id, std::string book_id, std::string user_id, date borrow_date, date due_date);
     bool return_book(std::string borrow_id);
     bool delete_borrow(std::string borrow_id);
     node<borrow>* get_borrow_by_id(std::string id);
     linked_list<borrow> get_my_borrows(std::string user_id, bool active_only);
-    void check_system_overdue(); // Tá»± Ä‘á»™ng cáº­p nháº­t phiáº¿u quÃ¡ háº¡n theo ngÃ y thá»±c táº¿
+    void check_system_overdue(); 
+    int get_user_active_borrow_count(std::string user_id) const;
 
-    // ================= 4. HÃ€NG Äá»¢I ÄÄ‚NG KÃ SÃCH Cá»¦A USER (QUEUE) =================
+    // ================= 4. HÀNG ĐỢI ĐĂNG KÝ (QUEUE) =================
+    std::string generate_request_id(); // HÀM MỚI: Tự sinh mã REQ
     bool register_book_request(std::string req_id, std::string book_id, std::string user_id, date b_date, date due_date);
     bool has_pending_requests() const;
     borrow peek_next_request() const;
@@ -90,7 +97,7 @@ public:
     int get_pending_request_count() const;
     bool is_request_id_in_queue(std::string req_id);
 
-    // ================= 5. NGHIá»†P Vá»¤ CA TRá»°C (SHIFT) =================
+    // ================= 5. NGHIỆP VỤ CA TRỰC (SHIFT) =================
     bool register_shift(date d, std::string session, std::string admin_id);
     bool cancel_shift(date d, std::string session, std::string admin_id);
     linked_list<shift> get_my_shifts(std::string admin_id);
@@ -99,19 +106,19 @@ public:
     void show_all_shifts();
     linked_list<shift> get_all_shifts();
 
-    // ================= 6. QUáº¢N LÃ NGÆ¯á»œI DÃ™NG (USER CRUD - MANAGER) =================
+    // ================= 6. QUẢN LÝ NGƯỜI DÙNG (USER CRUD) =================
     bool add_new_user(std::string id, std::string name, std::string password, std::string role);
     bool update_user_info(std::string old_id, user updated_user);
     bool delete_user(std::string id);
     node<user>* get_user_by_id(std::string id);
 
-    // ================= 7. Vá»Š TRÃ Ká»† SÃCH =================
+    // ================= 7. VỊ TRÍ KỆ SÁCH =================
     std::string get_book_shelf(std::string book_id);
 
-    // ================= 8. HOÃ€N TÃC ÄA Äá»I TÆ¯á»¢NG (TEMPLATE STACK UNDO) =================
+    // ================= 8. HOÀN TÁC ĐA ĐỐI TƯỢNG (UNDO STACK) =================
     bool can_undo_book() const;
     bool undo_last_book_action(std::string& out_message);
-    bool undo_book_action(std::string& out_message); // TÃªn gá»i tÆ°Æ¡ng Ä‘Æ°Æ¡ng
+    bool undo_book_action(std::string& out_message);
 
     bool can_undo_user() const;
     bool undo_user_action(std::string& out_message);

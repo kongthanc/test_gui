@@ -25,20 +25,19 @@ void borrow_service::parse_line(std::string line, borrow& b) {
     std::getline(ss, due_date_str, ';');
     std::getline(ss, status, ';');
 
-    // Parse ngÃ y mÆ°á»£n (VD: 18/09/2026)
-    int d1, m1, y1;
-    char slash;
-    std::stringstream ss_b(b_date_str);
+    int d1 = 1, m1 = 1, y1 = 2026;
+    char slash = '/';
+    std::stringstream ss_b(search_algo::trim(b_date_str));
     ss_b >> d1 >> slash >> m1 >> slash >> y1;
     date borrow_date(d1, m1, y1);
 
-    // Parse ngÃ y háº¹n tráº£ (VD: 25/09/2026)
-    int d2, m2, y2;
-    std::stringstream ss_d(due_date_str);
+    int d2 = 1, m2 = 1, y2 = 2026;
+    std::stringstream ss_d(search_algo::trim(due_date_str));
     ss_d >> d2 >> slash >> m2 >> slash >> y2;
     date due_date(d2, m2, y2);
 
-    b = borrow(id, book_id, user_id, borrow_date, due_date, status);
+    b = borrow(search_algo::trim(id), search_algo::trim(book_id), 
+               search_algo::trim(user_id), borrow_date, due_date, search_algo::trim(status));
 }
 
 // --- 1. Äá»ŒC Dá»® LIá»†U Tá»ª FILE ---
