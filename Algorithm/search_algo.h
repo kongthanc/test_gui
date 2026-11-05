@@ -15,15 +15,21 @@ public:
         return result;
     }
 
-    // 2. Gá»t bá» khoáº£ng tráº¯ng thá»«a á»Ÿ 2 Ä‘áº§u do ngÆ°á»i dÃ¹ng gÃµ nháº§m
+    /// 2. Gọt bỏ khoảng trắng thừa, tab và ký tự xuống dòng (\r, \n) ở 2 đầu
     static std::string trim(std::string str) {
         if (str.empty()) return str;
         
         int start = 0;
-        while (start < str.length() && str[start] == ' ') start++;
+        while (start < (int)str.length() && 
+              (str[start] == ' ' || str[start] == '\t' || str[start] == '\r' || str[start] == '\n')) {
+            start++;
+        }
         
-        int end = str.length() - 1;
-        while (end >= 0 && str[end] == ' ') end--;
+        int end = (int)str.length() - 1;
+        while (end >= 0 && 
+              (str[end] == ' ' || str[end] == '\t' || str[end] == '\r' || str[end] == '\n')) {
+            end--;
+        }
         
         if (start > end) return "";
         return str.substr(start, end - start + 1);

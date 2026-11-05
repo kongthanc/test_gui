@@ -113,23 +113,37 @@ linked_list<book> library_controller::get_related_books(std::string category, st
 
 bool library_controller::add_new_book(std::string id, std::string title, std::string author, std::string category, int qty, int year) {
     book new_b(id, title, author, category, qty, year);
-    return b_service.add_book(new_b);
+    if (b_service.add_book(new_b)) {
+        book_undo_stack.push(action_log<book>(id, "ADD", new_b));
+        return true;
+    }
+    return false;
 }
 
 bool library_controller::update_book_info(std::string old_id, book book_n) {
-    // Náº¿u Ä‘á»•i mÃ£ sÃ¡ch mÃ  sÃ¡ch cÅ© Ä‘ang cÃ³ ngÆ°á»i mÆ°á»£n -> KhÃ´ng cho Ä‘á»•i Ä‘á»ƒ trÃ¡nh sai lá»‡ch dá»¯ liá»‡u
-    if (old_id != book_n.get_id() && br_service.is_book_borrowed(old_id)) {
-        return false;
+    if (old_id != book_n.get_id() && br_service.is_book_borrowed(old_id)) return false;
+    node<book>* old_node = b_service.get_book_by_id(old_id);
+    if (old_node == nullptr) return false;
+    book backup = old_node->get_data();
+
+    if (b_service.update_book(old_id, book_n)) {
+        book_undo_stack.push(action_log<book>(book_n.get_id(), "UPDATE", backup));
+        return true;
     }
-    return b_service.update_book(old_id, book_n);
+    return false;
 }
 
 bool library_controller::delete_book(std::string id) {
-    // RÃ€NG BUá»˜C TOÃ€N Váº¸N: KhÃ´ng cho xÃ³a sÃ¡ch Ä‘ang cÃ³ ngÆ°á»i mÆ°á»£n hoáº·c quÃ¡ háº¡n chÆ°a tráº£
-    if (br_service.is_book_borrowed(id)) {
-        return false; 
+    if (br_service.is_book_borrowed(id)) return false;
+    node<book>* target = b_service.get_book_by_id(id);
+    if (target == nullptr) return false;
+    book backup = target->get_data();
+
+    if (b_service.delete_book(id)) {
+        book_undo_stack.push(action_log<book>(id, "DELETE", backup));
+        return true;
     }
-    return b_service.delete_book(id);
+    return false;
 }
 
 node<book>* library_controller::get_book_by_id(std::string id) {
@@ -363,3 +377,101 @@ bool library_controller::has_active_borrows(
     std::string user_id) const {
     return br_service.has_active_borrows(user_id);
 }
+// --- Nối hàm filter_books có sẵn từ book_service ---
+linked_list<book> library_controller::filter_books_multi(std::string title, std::string author, std::string category, int year) {
+    return b_service.filter_books(title, author, category, year);
+}
+
+// --- Nối hàm đếm số sách đang mượn (giới hạn 7 cuốn) từ borrow_service ---
+int library_controller::get_user_active_borrow_count(std::string user_id) const {
+    return br_service.count_active_borrows_by_user(user_id);
+}
+
+// --- Tận dụng Graph + BFS có sẵn trong Algorithm/graph_algo.h ---
+linked_list<book> library_controller::get_graph_recommendations(std::string book_id) {
+    linked_list<book> all = b_service.search_books("");
+    node<book>* target = b_service.get_book_by_id(book_id);
+    if (target == nullptr || all.get_size() <= 1) return linked_list<book>();
+
+    graph<book> g(all.get_size() + 2);
+    node<book>* curr = all.get_head();
+    while (curr != nullptr) {
+        g.add_vertex(curr->get_data());
+        curr = curr->get_next();
+    }
+
+    for (int i = 0; i < g.get_num_vertices(); ++i) {
+        book b1 = g.get_vertex_data(i);
+        for (int j = i + 1; j < g.get_num_vertices(); ++j) {
+            book b2 = g.get_vertex_data(j);
+            if (search_algo::contains(b1.get_category(), b2.get_category()) ||
+                search_algo::contains(b1.get_author(), b2.get_author())) {
+                g.add_edge(i, j, false);
+            }
+        }
+    }
+
+    // Chạy thuật toán BFS trên đồ thị đối tượng book (nhờ book đã có operator==)
+    linked_list<book> bfs_list = graph_algo::BFS(g, target->get_data());
+    linked_list<book> result;
+    node<book>* r_curr = bfs_list.get_head();
+    while (r_curr != nullptr) {
+        if (!(r_curr->get_data() == target->get_data())) {
+            result.push_back(r_curr->get_data());
+        }
+        r_curr = r_curr->get_next();
+    }
+    return result;
+}
+
+// --- Tận dụng hàm count_borrows_by_book để tìm Thể loại Hot ---
+std::string library_controller::get_hot_category() {
+    linked_list<book> all = b_service.search_books("");
+    if (all.empty()) return "Giao trinh";
+
+    std::string best_cat = all.get_head()->get_data().get_category();
+    int max_cnt = -1;
+    for (node<book>* p = all.get_head(); p != nullptr; p = p->get_next()) {
+        int cnt = br_service.count_borrows_by_book(p->get_data().get_id());
+        if (cnt > max_cnt) {
+            max_cnt = cnt;
+            best_cat = p->get_data().get_category();
+        }
+    }
+    return best_cat;
+}
+
+// --- Định nghĩa các hàm Undo đã khai báo trong library_controller.h ---
+bool library_controller::can_undo_book() const { return !book_undo_stack.empty(); }
+
+bool library_controller::undo_last_book_action(std::string& out_message) {
+    if (book_undo_stack.empty()) {
+        out_message = "Khong co thao tac sach nao trong Stack de hoan tac!";
+        return false;
+    }
+    action_log<book> last = book_undo_stack.peek();
+    book_undo_stack.pop();
+
+    bool success = false;
+    if (last.get_action_type() == "ADD") {
+        success = b_service.delete_book(last.get_target_id());
+        out_message = "Da hoan tac: Xoa sach vua them [" + last.get_target_id() + "]";
+    } else if (last.get_action_type() == "DELETE") {
+        success = b_service.add_book(last.get_backup_data());
+        out_message = "Da hoan tac: Khoi phuc sach vua xoa [" + last.get_target_id() + "]";
+    } else if (last.get_action_type() == "UPDATE") {
+        success = b_service.update_book(last.get_target_id(), last.get_backup_data());
+        out_message = "Da hoan tac: Khoi phuc thong tin cu cua sach [" + last.get_target_id() + "]";
+    }
+    
+    return success;
+}
+
+bool library_controller::undo_book_action(std::string& out_message) {
+    return undo_last_book_action(out_message);
+}
+
+bool library_controller::can_undo_user() const { return !user_undo_stack.empty(); }
+bool library_controller::undo_user_action(std::string& out_message) { return false; }
+bool library_controller::can_undo_borrow() const { return !borrow_undo_stack.empty(); }
+bool library_controller::undo_borrow_action(std::string& out_message) { return false; }

@@ -13,8 +13,10 @@ date::date(int day, int month, int year) {
     this->month = month;
     this->year = year;
 
-    if (!is_valid()) {
-        throw std::invalid_argument("Ngay thang nam khong hop le");
+   if (!is_valid()) {
+        this->day = 1;
+        this->month = 1;
+        this->year = 2026;
     }
 }
 

@@ -10,7 +10,9 @@
 #include "../Service/shift_service.h"
 #include "../Structure/queue.h"
 #include "../Model/action_log.h"
-#include "../Structure/stack.h" // Stack tá»± cháº¿ cá»§a báº¡n
+#include "../Structure/stack.h" 
+#include "../Structure/graph.h"
+#include "../Algorithm/graph_algo.h"
 
 class library_controller {
 private:
@@ -58,6 +60,10 @@ public:
     // ================= 2. NGHIá»†P Vá»¤ SÃCH (BOOK) =================
     linked_list<book> search_books(std::string keyword);
     linked_list<book> get_related_books(std::string category, std::string exclude_book_id);
+    linked_list<book> filter_books_multi(std::string title, std::string author, std::string category, int year = 0);
+    linked_list<book> get_graph_recommendations(std::string book_id);
+    std::string get_hot_category();
+    int get_user_active_borrow_count(std::string user_id) const;
     bool add_new_book(std::string id, std::string title, std::string author, std::string category, int qty, int year);
     bool update_book_info(std::string old_id, book book_n);
     bool delete_book(std::string id);

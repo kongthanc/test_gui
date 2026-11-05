@@ -23,7 +23,9 @@ void user_service::parse_line(std::string line, user& u) {
     std::getline(ss, password, ';');
     std::getline(ss, role, ';');
 
-    u = user(id, name, password, role);
+    // Trim sạch từng trường để role "manager\r" hay "user " không bị lỗi đăng nhập
+    u = user(search_algo::trim(id), search_algo::trim(name), 
+             search_algo::trim(password), search_algo::to_lower(search_algo::trim(role)));
 }
 
 // --- 1. Äá»ŒC Dá»® LIá»†U Tá»ª FILE ---

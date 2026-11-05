@@ -164,7 +164,8 @@ void book_service::parse_line(std::string line, book& b) {
         year = 0;
     }
     // Khá»Ÿi táº¡o Ä‘á»‘i tÆ°á»£ng book hoÃ n chá»‰nh
-    b = book(id, title, author, category, quantity, year);
+    b = book(search_algo::trim(id), search_algo::trim(title), 
+             search_algo::trim(author), search_algo::trim(category), quantity, year);
 }
 
 linked_list<book> book_service::filter_books(std::string title_kw, std::string author_kw, std::string category_kw, int year) {
