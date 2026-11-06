@@ -106,7 +106,6 @@ bool library_controller::add_new_book(std::string id, std::string title, std::st
 }
 
 bool library_controller::update_book_info(std::string old_id, book book_n) {
-    // Náº¿u Ä‘á»•i mÃ£ sÃ¡ch mÃ  sÃ¡ch cÅ© Ä‘ang cÃ³ ngÆ°á»i mÆ°á»£n -> KhÃ´ng cho Ä‘á»•i Ä‘á»ƒ trÃ¡nh sai lá»‡ch dá»¯ liá»‡u
     if (old_id != book_n.get_id() && br_service.is_book_borrowed(old_id)) {
         return false;
     }
