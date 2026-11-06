@@ -180,6 +180,7 @@ void library_gui::reset() {
     message.clear();
     message_is_error = false;
     showing_related = false;
+    showing_pending_requests = false;
     selected_book_id.clear();
     confirm_open = false;
     confirm_just_opened = false;
@@ -217,6 +218,7 @@ void library_gui::switch_page(page next_page) {
     message.clear();
     message_is_error = false;
     showing_related = false;
+    showing_pending_requests = false;
     clear_fields();
 }
 
@@ -1592,8 +1594,83 @@ void library_gui::draw_shelf() {
 }
 
 void library_gui::draw_user_request() {
+    user* current_user = controller.get_current_user();
+    if (current_user == nullptr) {
+        DrawText("Vui lòng đăng nhập lại.", CONTENT_X + 25, 150, 20, RED);
+        return;
+    }
+
+    linked_list<borrow> pending_requests =
+        controller.get_my_pending_requests(current_user->get_id());
+    int pending_count = pending_requests.get_size();
+
+    if (showing_pending_requests) {
+        DrawText("Danh sách yêu cầu đang chờ duyệt", CONTENT_X + 25, 120,
+                 27, DARKBLUE);
+        if (draw_button({CONTENT_X + CONTENT_W - 235, 112, 210, 40},
+                        "Quay lại đăng ký", GRAY)) {
+            showing_pending_requests = false;
+            list_page = 0;
+            return;
+        }
+
+        const char* headers[] = {"Mã yêu cầu", "Tên sách", "Ngày mượn", "Hạn trả"};
+        const int columns[] = {330, 485, 850, 1010};
+        draw_table_header(headers, columns, 4, 185);
+
+        int total = pending_count;
+        int page_count = total == 0 ? 1 :
+            (total + ROWS_PER_PAGE - 1) / ROWS_PER_PAGE;
+        if (list_page >= page_count) list_page = page_count - 1;
+
+        node<borrow>* current = pending_requests.get_head();
+        int skip = list_page * ROWS_PER_PAGE;
+        while (current != nullptr && skip-- > 0) {
+            current = current->get_next();
+        }
+
+        int row = 0;
+        while (current != nullptr && row < ROWS_PER_PAGE) {
+            borrow item = current->get_data();
+            node<book>* found = controller.get_book_by_id(item.get_book_id());
+            std::string title = found == nullptr ? item.get_book_id()
+                                                  : found->get_data().get_title();
+            int y = 225 + row * 46;
+            DrawRectangle(CONTENT_X + 15, y, CONTENT_W - 30, 44,
+                          row % 2 == 0 ? Color{245, 248, 252, 255}
+                                       : Color{232, 239, 248, 255});
+            DrawText(item.get_id().c_str(), columns[0], y + 12, 17, DARKGRAY);
+            DrawText(title.c_str(), columns[1], y + 12, 17, DARKGRAY);
+            DrawText(format_date(item.get_borrow_date()).c_str(),
+                     columns[2], y + 12, 17, DARKGRAY);
+            DrawText(format_date(item.get_due_date()).c_str(),
+                     columns[3], y + 12, 17, DARKGRAY);
+            current = current->get_next();
+            ++row;
+        }
+
+        if (total == 0) {
+            DrawText("Bạn hiện không có yêu cầu mượn nào đang chờ duyệt.",
+                     330, 260, 19, DARKGRAY);
+        }
+        if (draw_button({CONTENT_X + 230, 595, 110, 40}, "Trước", GRAY) &&
+            list_page > 0) --list_page;
+        if (draw_button({CONTENT_X + 550, 595, 110, 40}, "Sau", GRAY) &&
+            list_page + 1 < page_count) ++list_page;
+        draw_paging_hint(list_page, total, 605);
+        return;
+    }
+
     DrawText("Đăng ký mượn sách", CONTENT_X + 25, 120, 30, DARKBLUE);
     draw_back_button();
+    std::string request_button_label =
+        "Danh sách yêu cầu (" + std::to_string(pending_count) + ")";
+    if (draw_button({CONTENT_X + 485, 115, 240, 40},
+                    request_button_label.c_str(), BLUE)) {
+        showing_pending_requests = true;
+        list_page = 0;
+        return;
+    }
 
     draw_input({340, 195, 360, 44}, "Mã sách", field_b, sizeof(field_b));
     draw_input({740, 195, 360, 44}, "Ngày mượn (DD/MM/YYYY)", field_c, sizeof(field_c));
@@ -1603,18 +1680,13 @@ void library_gui::draw_user_request() {
 
     date borrow_date;
     int duration = 0;
-    if (is_blank(field_b) || !read_date(field_c, borrow_date) || !read_integer(field_d, duration, 1, 30) || 
+    if (is_blank(field_b) || !read_date(field_c, borrow_date) || !read_integer(field_d, duration, 1, 30) ||
         (duration != 7 && duration != 14 && duration != 30))
     {
         set_message("Kiểm tra thông tin, ngày và thời hạn mượn.", true);
         return;
     }
 
-    user* current_user = controller.get_current_user();
-    if (current_user == nullptr) {
-        set_message("Vui lòng đăng nhập lại.", true);
-        return;
-    }
     std::string user_id = current_user->get_id();
     if (controller.has_overdue_borrows(user_id)) {
         set_message("Bạn còn sách quá hạn chưa trả, "

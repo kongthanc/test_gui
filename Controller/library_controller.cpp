@@ -319,6 +319,25 @@ int library_controller::get_pending_request_count() const {
     return book_request_queue.get_size();
 }
 
+linked_list<borrow> library_controller::get_my_pending_requests(std::string user_id) {
+    linked_list<borrow> requests;
+    int size = book_request_queue.get_size();
+
+    // Duyệt đúng một vòng và giữ nguyên thứ tự FIFO của hàng đợi.
+    for (int i = 0; i < size; ++i) {
+        borrow req = book_request_queue.front();
+        book_request_queue.pop();
+
+        if (req.get_user_id() == user_id && req.get_status() == "Cho duyet") {
+            requests.push_back(req);
+        }
+
+        book_request_queue.push(req);
+    }
+
+    return requests;
+}
+
 bool library_controller::register_shift(date d, std::string session, std::string admin_id) {
     return s_service.register_shift(d, session, admin_id, u_service);
 }

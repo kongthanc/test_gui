@@ -91,6 +91,7 @@ public:
     bool approve_next_request();
     bool reject_next_request(std::string reason = "");
     int get_pending_request_count() const;
+    linked_list<borrow> get_my_pending_requests(std::string user_id);
     bool is_request_id_in_queue(std::string req_id);
 
     // ================= 5. NGHIỆP VỤ CA TRỰC (SHIFT) =================

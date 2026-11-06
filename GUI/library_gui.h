@@ -41,6 +41,7 @@ private:
     std::string message;
     bool message_is_error;
     bool showing_related;
+    bool showing_pending_requests;
     std::string selected_book_id;
 
     // Hộp thoại xác nhận.

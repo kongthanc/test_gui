@@ -1,4 +1,4 @@
-B001;Lập trình C++ cơ bản;Nguyễn Thanh Thủy;IT;9;2020
+B001;Lập trình C++ cơ bản;Nguyễn Thanh Thủy;IT;8;2020
 B002;Cấu trúc dữ liệu và Giải thuật;Lê Minh Hoàng;IT;5;2015
 B003;Đắc Nhân Tâm;Dale Carnegie;Kỹ năng;15;2021
 B004;Clean Code;Robert C. Martin;IT;6;2008
