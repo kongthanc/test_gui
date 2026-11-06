@@ -7,6 +7,7 @@
 #include <cstring>
 #include <string>
 #include <vector>
+#include <algorithm>
 #include "ui_font.h"
 #include "ui_layout.h"
 
@@ -183,12 +184,14 @@ void library_gui::reset() {
     confirm_open = false;
     confirm_just_opened = false;
     input_locked = false;
+    confirm_input_enabled = false;
     confirm_title.clear();
     confirm_text.clear();
     confirm_ok_label.clear();
     confirm_ok_color = BLUE;
     confirm_action = nullptr;
     clear_fields();
+    confirm_error.clear();
 }
 
 bool library_gui::wants_logout() const {
@@ -255,7 +258,23 @@ void library_gui::ask_confirm(const std::string& title, const std::string& text,
     confirm_text = text;
     confirm_ok_label = ok_label;
     confirm_ok_color = ok_color;
+    confirm_input_enabled = false;
     confirm_action = action;
+}
+
+void library_gui::ask_confirm_input(
+    const std::string& title,
+    const std::string& text,
+    const std::string& ok_label,
+    Color ok_color,
+    std::function<void()> action) {
+
+    field_g[0] = '\0';
+    active_field = nullptr;
+    active_field_capacity = 0;
+
+    ask_confirm(title, text, ok_label, ok_color, action);
+    confirm_input_enabled = true;
 }
 
 void library_gui::draw_confirm_dialog() {
@@ -266,18 +285,29 @@ void library_gui::draw_confirm_dialog() {
     input_locked = confirm_just_opened;
     confirm_just_opened = false;
 
+    // Thu thap ban phim sau khi mo khoa dau vao cua hop thoai.
+    collect_text_input();
+
     DrawRectangle(0, 0, WINDOW_W, WINDOW_H, {0, 0, 0, 130});
 
-    Rectangle box = {340, 220, 540, 290};
+    Rectangle box = {
+        340, 200, 540,
+        confirm_input_enabled ? 380.0f : 290.0f
+    };
+
     DrawRectangleRounded(box, 0.05f, 10, WHITE);
     DrawRectangleRoundedLines(box, 0.05f, 10, DARKBLUE);
 
-    DrawText(confirm_title.c_str(), (int)box.x + 28, (int)box.y + 22, 26, DARKBLUE);
-    DrawRectangle((int)box.x + 28, (int)box.y + 60, (int)box.width - 56, 2, LIGHTGRAY);
+    DrawText(confirm_title.c_str(), (int)box.x + 28,
+             (int)box.y + 22, 26, DARKBLUE);
+
+    DrawRectangle((int)box.x + 28, (int)box.y + 60,
+                  (int)box.width - 56, 2, LIGHTGRAY);
 
     // Tach noi dung theo dau xuong dong.
     std::string line;
     int line_index = 0;
+
     for (size_t i = 0; i <= confirm_text.size(); ++i) {
         if (i == confirm_text.size() || confirm_text[i] == '\n') {
             DrawText(line.c_str(), (int)box.x + 28,
@@ -289,18 +319,57 @@ void library_gui::draw_confirm_dialog() {
         }
     }
 
-    bool cancelled = draw_button({box.x + 60, box.y + 220, 190, 48}, "Hủy", GRAY);
-    bool confirmed = draw_button({box.x + 290, box.y + 220, 190, 48},
-                                 confirm_ok_label.c_str(), confirm_ok_color);
+    if (confirm_input_enabled) {
+        // Dat o nhap ben duoi toan bo noi dung, tranh de len thong tin yeu cau.
+        draw_input(
+            {box.x + 28, box.y + 220, box.width - 56, 44},
+            "Lý do từ chối",
+            field_g,
+            sizeof(field_g)
+        );
+
+        // Hien thi loi nhap lieu ngay trong hop thoai.
+        if (!confirm_error.empty()) {
+            DrawText(confirm_error.c_str(),
+                     (int)box.x + 28, (int)box.y + 275,
+                     16, RED);
+        }
+    }
+
+    float button_y = box.y + (confirm_input_enabled ? 310 : 220);
+
+    bool cancelled = draw_button(
+        {box.x + 60, button_y, 190, 48}, "Hủy", GRAY);
+
+    bool confirmed = draw_button(
+        {box.x + 290, button_y, 190, 48},
+        confirm_ok_label.c_str(), confirm_ok_color
+    );
 
     if (confirmed) {
+        if (confirm_input_enabled && is_blank(field_g)) {
+            // Khong dong hop thoai neu chua nhap ly do.
+            confirm_error = "Vui lòng nhập lý do từ chối.";
+            return;
+        }
+
         std::function<void()> action = confirm_action;
+
         confirm_open = false;
+        confirm_input_enabled = false;
+        confirm_error.clear();
         confirm_action = nullptr;
+
         if (action) action();
+
     } else if (cancelled) {
         confirm_open = false;
+        confirm_input_enabled = false;
+        confirm_error.clear();
         confirm_action = nullptr;
+        active_field = nullptr;
+        active_field_capacity = 0;
+
         set_message("Đã hủy thao tác.");
     }
 }
@@ -429,7 +498,55 @@ void library_gui::draw_shell(const std::string& role) {
 
     std::string role_name = display_role(role);
     int role_width = MeasureText(role_name.c_str(), 22);
-    DrawText(role_name.c_str(), WINDOW_W - 28 - role_width, 29, 22, WHITE);
+    int role_x = WINDOW_W - 28 - role_width;
+
+    if (role == "user")
+    {
+        user *current_user = controller.get_current_user();
+        int unread = current_user == nullptr ? 0 : controller.get_unread_notification_count(current_user->get_id());
+
+        Rectangle bell_box = {
+            (float)(role_x - 72), 14, 48, 52};
+
+        Vector2 mouse = ui_layout::mouse_position();
+        bool hovered = !input_locked &&
+                       CheckCollisionPointRec(mouse, bell_box);
+
+        DrawRectangleRounded(
+            bell_box, 0.2f, 6,
+            hovered ? BLUE : DARKBLUE);
+
+        // Vẽ chuông
+        DrawCircle(role_x - 48, 34, 10, WHITE);
+        DrawRectangle(role_x - 58, 34, 20, 12, WHITE);
+        DrawRectangle(role_x - 60, 44, 24, 4, WHITE);
+        DrawCircle(role_x - 48, 51, 3, WHITE);
+
+        // Số thông báo chưa đọc
+        if (unread > 0)
+        {
+            DrawCircle(role_x - 31, 19, 10, RED);
+
+            std::string count_text =
+                unread > 99 ? "99+" : std::to_string(unread);
+
+            int text_width = MeasureText(count_text.c_str(), 11);
+
+            DrawText(
+                count_text.c_str(),
+                role_x - 31 - text_width / 2,
+                14,
+                11,
+                WHITE);
+        }
+
+        if (hovered && IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+        {
+            open_root_page(USER_NOTIFICATIONS);
+        }
+    }
+
+    DrawText(role_name.c_str(), role_x, 29, 22, WHITE);
 
     DrawRectangle(0, 82, SIDEBAR_W, WINDOW_H - 82, sidebar_background);
     DrawText("CHỨC NĂNG", 28, 110, 21, DARKGRAY);
@@ -688,20 +805,32 @@ void library_gui::draw_books(const std::string& role, bool user_search) {
     }
 
     int suggestion_row = 0;
-    while (suggest != nullptr && suggestion_row < SUGGESTIONS_PER_PAGE) {
+    while (suggest != nullptr && suggestion_row < SUGGESTIONS_PER_PAGE)
+    {
         book item = suggest->get_data();
         int y = 532 + suggestion_row * 28;
-        DrawRectangle(CONTENT_X + 15, y, CONTENT_W - 30, 26,
-                      suggestion_row % 2 == 0 ? Color{239, 248, 241, 255}
-                                              : Color{229, 242, 233, 255});
+        DrawRectangle(CONTENT_X + 15, y, CONTENT_W - 30, 26, suggestion_row % 2 == 0 ? 
+            Color{239, 248, 241, 255} : Color{229, 242, 233, 255});
         DrawText(item.get_title().c_str(), 330, y + 6, 15, DARKGRAY);
         bool same_author = item.get_author() == source.get_author();
         bool same_category = item.get_category() == source.get_category();
-        std::string reason = same_author && same_category
-                                 ? "Cùng tác giả + thể loại"
-                                 : same_author ? "Cùng tác giả"
-                                               : "Cùng thể loại";
-        DrawText(reason.c_str(), 865, y + 6, 15, DARKGREEN);
+        std::string reason = same_author && same_category ? 
+            "Cùng tác giả + thể loại" : same_author ? "Cùng tác giả" : "Cùng thể loại";
+        DrawText(reason.c_str(), 800, y + 6, 14, DARKGREEN);
+        DrawText(TextFormat("%d", item.get_quantity()),
+                 970, y + 6, 15, DARKGREEN);
+
+        if (draw_button({1030, (float)y + 1, 115, 24}, "Mượn sách", item.get_quantity() > 0 ? BLUE : GRAY) &&
+            item.get_quantity() > 0)
+        {
+            std::string book_id = item.get_id();
+
+            open_page(USER_REQUEST);
+
+            std::strncpy(field_b, book_id.c_str(), sizeof(field_b) - 1);
+            field_b[sizeof(field_b) - 1] = '\0';
+            return;
+        }
         suggest = suggest->get_next();
         ++suggestion_row;
     }
@@ -983,15 +1112,13 @@ void library_gui::draw_borrow_return(bool deleting) {
 void library_gui::draw_requests() {
     DrawText("Duyệt yêu cầu mượn sách", CONTENT_X + 25, 120, 30, DARKBLUE);
     draw_back_button();
-
     if (!controller.has_pending_requests()) {
         DrawText("Không có yêu cầu nào trong hàng đợi.", 340, 235, 22, DARKGRAY);
         return;
     }
 
     borrow request = controller.peek_next_request();
-    DrawText(TextFormat("Số yêu cầu đang chờ: %d",
-                        controller.get_pending_request_count()),
+    DrawText(TextFormat("Số yêu cầu đang chờ: %d", controller.get_pending_request_count()),
              340, 190, 23, DARKBLUE);
     DrawText(TextFormat("Mã phiếu: %s", request.get_id().c_str()),
              360, 250, 21, DARKGRAY);
@@ -1014,7 +1141,8 @@ void library_gui::draw_requests() {
                           "Mã sách: " + request.get_book_id() + "\n"
                           "Mã độc giả: " + request.get_user_id();
 
-    if (draw_button({360, 485, 195, 48}, "Duyệt", DARKGREEN)) {
+    // Nút duyệt: xác nhận trước khi xử lý yêu cầu.
+    if (draw_button({360, 525, 195, 48}, "Duyệt", DARKGREEN)) {
         ask_confirm("Xác nhận duyệt yêu cầu",
                     "Duyệt yêu cầu mượn sách này?\n" + summary,
                     "Duyệt", DARKGREEN,
@@ -1027,14 +1155,26 @@ void library_gui::draw_requests() {
         });
         return;
     }
-    if (draw_button({585, 485, 195, 48}, "Từ chối", RED)) {
-        ask_confirm("Xác nhận từ chối yêu cầu",
-                    "Từ chối yêu cầu mượn sách này?\n" + summary,
-                    "Từ chối", RED,
-                    [this]() {
-            controller.reject_next_request();
-            set_message("Đã từ chối yêu cầu đầu hàng đợi.");
-        });
+
+    // Nhấn từ chối mới mở hộp thoại nhập lý do.
+    if (draw_button({585, 525, 195, 48}, "Từ chối", RED)) {
+        ask_confirm_input(
+            "Xác nhận từ chối yêu cầu",
+            "Từ chối yêu cầu mượn sách này?\n" + summary,
+            "Từ chối",
+            RED,
+            [this]() {
+                // Lấy lý do đã nhập trong hộp thoại.
+                std::string reason = field_g;
+
+                if (controller.reject_next_request(reason)) {
+                    set_message("Đã từ chối yêu cầu và gửi thông báo.");
+                } else {
+                    set_message("Không thể từ chối yêu cầu.", true);
+                }
+            }
+        );
+        return;
     }
 }
 
@@ -1562,6 +1702,307 @@ void library_gui::draw_my_borrows(bool active_only) {
     draw_paging_hint(list_page, total, 605);
 }
 
+void library_gui::draw_notifications() {
+    DrawText("Thông báo", CONTENT_X + 25, 120, 30, DARKBLUE);
+    draw_back_button();
+
+    user* current_user = controller.get_current_user();
+    if (current_user == nullptr) return;
+
+    std::vector<notification> records =
+        controller.get_my_notifications(current_user->get_id());
+
+    int total = (int)records.size();
+    int unread =
+        controller.get_unread_notification_count(current_user->get_id());
+
+    DrawText(
+        TextFormat("Tổng: %d thông báo | Chưa đọc: %d", total, unread),
+        330, 175, 19, DARKGRAY
+    );
+
+    int page_count = total == 0 ? 1 : (total + 4) / 5;
+
+    if (list_page >= page_count) {
+        list_page = page_count - 1;
+    }
+
+    int start = list_page * 5;
+    int end = std::min(start + 5, total);
+
+    for (int i = start; i < end; ++i) {
+        // Hien thi thong bao moi nhat truoc.
+        notification item = records[total - 1 - i];
+
+        int y = 215 + (i - start) * 76;
+
+        Rectangle card = {325, (float)y, 850, 66};
+
+        DrawRectangleRounded(
+            card, 0.08f, 6,
+            item.get_is_read()
+                ? Color{245, 247, 251, 255}
+                : Color{225, 238, 255, 255}
+        );
+
+        DrawRectangleRoundedLines(card, 0.08f, 6, LIGHTGRAY);
+
+        DrawCircle(
+            345, y + 20, 5,
+            item.get_is_read() ? GRAY : BLUE
+        );
+
+        DrawText(
+            item.get_title().c_str(),
+            360, y + 8, 18, DARKBLUE
+        );
+
+        // Rut gon noi dung tren danh sach, chi xem day du khi mo chi tiet.
+        std::string content = item.get_content();
+
+        if (content.size() > 95) {
+            content = content.substr(0, 92) + "...";
+        }
+
+        DrawText(
+            content.c_str(),
+            360, y + 34, 15, DARKGRAY
+        );
+
+        // Tang kich thuoc va can giua thoi gian theo chieu doc cua the.
+        DrawText(
+            item.get_created_at().c_str(),
+            1000, y + 23, 18, GRAY
+        );
+
+        Vector2 mouse = ui_layout::mouse_position();
+
+        // Nhan vao thong bao de mo noi dung chi tiet.
+        if (!notification_detail_open &&
+            !input_locked &&
+            CheckCollisionPointRec(mouse, card) &&
+            IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+
+            notification_detail_title = item.get_title();
+            notification_detail_content = item.get_content();
+            notification_detail_time = item.get_created_at();
+
+            notification_detail_scroll = 0;
+            notification_detail_open = true;
+
+            // Danh dau da doc khi nguoi dung mo thong bao.
+            if (!item.get_is_read()) {
+                controller.mark_notification_read(item.get_id());
+                set_message("Đã đánh dấu thông báo là đã đọc.");
+            }
+        }
+    }
+
+    if (total == 0) {
+        DrawText(
+            "Bạn chưa có thông báo nào.",
+            350, 260, 20, DARKGRAY
+        );
+    }
+
+    // Phan trang danh sach thong bao.
+    if (draw_button({CONTENT_X + 230, 615, 110, 40}, "Trước", GRAY)
+        && list_page > 0 && !notification_detail_open) {
+        --list_page;
+    }
+
+    if (draw_button({CONTENT_X + 550, 615, 110, 40}, "Sau", GRAY)
+        && list_page + 1 < page_count && !notification_detail_open) {
+        ++list_page;
+    }
+
+    draw_paging_hint(list_page, total, 625, 5);
+
+    // Hien thi hop thoai chi tiet thong bao.
+    if (notification_detail_open)
+    {
+        float screen_w = (float)WINDOW_W;
+        float screen_h = (float)WINDOW_H;
+
+        // Gioi han kich thuoc hop thoai, khong de tran khoi man hinh.
+        float box_w = std::min(820.0f, screen_w * 0.72f);
+        float box_h = std::min(560.0f, screen_h * 0.75f);
+
+        // Can giua hop thoai theo kich thuoc cua so.
+        Rectangle box = {
+            (screen_w - box_w) / 2,
+            (screen_h - box_h) / 2,
+            box_w,
+            box_h
+        };
+
+        DrawRectangle(0, 0, (int)screen_w, (int)screen_h,
+                      {0, 0, 0, 130});
+
+        DrawRectangleRounded(box, 0.05f, 10, WHITE);
+        DrawRectangleRoundedLines(box, 0.05f, 10, DARKBLUE);
+
+        // Tieu de thong bao.
+        DrawText(
+            notification_detail_title.c_str(),
+            (int)box.x + 30, (int)box.y + 25,
+            27, DARKBLUE);
+
+        DrawRectangle(
+            (int)box.x + 30, (int)box.y + 75,
+            (int)box.width - 60, 2, LIGHTGRAY);
+
+        // Thoi gian thong bao.
+        DrawText(
+            notification_detail_time.c_str(),
+            (int)box.x + 30, (int)box.y + 95,
+            18, GRAY);
+
+        DrawText(
+            "Nội dung:",
+            (int)box.x + 30, (int)box.y + 135,
+            22, DARKBLUE);
+
+        // Tach phan ly do thanh mot dong rieng khi hien thi.
+        std::string display_content = notification_detail_content;
+
+        size_t reason_pos = display_content.find("Lý do:");
+
+        if (reason_pos != std::string::npos && reason_pos > 0)
+        {
+            if (display_content[reason_pos - 1] == ' ')
+            {
+                display_content.replace(reason_pos - 1, 1, "\n");
+            }
+        }
+
+        // Khu vuc hien thi noi dung co the cuon.
+        Rectangle view = {
+            box.x + 30,
+            box.y + 170,
+            box.width - 60,
+            box.height - 270};
+
+        // Chia noi dung thanh cac dong dua theo chieu rong hien thi.
+        std::vector<std::string> lines;
+        std::string paragraph;
+
+        for (size_t i = 0; i <= display_content.size(); ++i)
+        {
+            if (i == display_content.size() ||
+                display_content[i] == '\n')
+            {
+
+                std::string current_line;
+                size_t pos = 0;
+
+                while (pos < paragraph.size())
+                {
+                    while (pos < paragraph.size() &&
+                           paragraph[pos] == ' ')
+                    {
+                        ++pos;
+                    }
+
+                    if (pos >= paragraph.size())
+                        break;
+
+                    size_t end_word = paragraph.find(' ', pos);
+
+                    std::string word = paragraph.substr(
+                        pos,
+                        end_word == std::string::npos
+                            ? std::string::npos
+                            : end_word - pos);
+
+                    std::string candidate = current_line.empty()
+                                                ? word
+                                                : current_line + " " + word;
+
+                    if (MeasureText(candidate.c_str(), 21) >
+                            (int)view.width - 20 &&
+                        !current_line.empty())
+                    {
+
+                        lines.push_back(current_line);
+                        current_line = word;
+                    }
+                    else
+                    {
+                        current_line = candidate;
+                    }
+
+                    if (end_word == std::string::npos)
+                        break;
+
+                    pos = end_word + 1;
+                }
+
+                lines.push_back(current_line);
+                paragraph.clear();
+            }
+            else
+            {
+                paragraph += display_content[i];
+            }
+        }
+
+        // Tinh gioi han cuon theo tong chieu cao noi dung.
+        float line_height = 32;
+        float content_height = (float)lines.size() * line_height;
+
+        float max_scroll = std::max(
+            0.0f,
+            content_height - view.height);
+
+        Vector2 mouse = ui_layout::mouse_position();
+
+        // Chi cuon khi chuot nam trong khu vuc noi dung.
+        if (CheckCollisionPointRec(mouse, view))
+        {
+            notification_detail_scroll -= GetMouseWheelMove() * 40;
+        }
+
+        notification_detail_scroll = std::max(
+            0.0f,
+            std::min(notification_detail_scroll, max_scroll));
+
+        // Gioi han vung ve de chu khong tran khoi hop thoai.
+        BeginScissorMode(
+            (int)view.x, (int)view.y,
+            (int)view.width, (int)view.height);
+
+        for (int i = 0; i < (int)lines.size(); ++i)
+        {
+            DrawText(
+                lines[i].c_str(),
+                (int)view.x,
+                (int)(view.y + 5 + i * line_height - notification_detail_scroll),
+                21, DARKGRAY);
+        }
+
+        EndScissorMode();
+
+        DrawText(
+            "Cuộn chuột để xem nội dung còn lại",
+            (int)view.x,
+            (int)(box.y + box.height - 75),
+            15, GRAY);
+
+        // Nut dong luon nam o giua phia duoi hop thoai.
+        if (draw_button(
+                {box.x + (box.width - 200) / 2,
+                 box.y + box.height - 55,
+                 200, 42},
+                "Đóng", GRAY))
+        {
+
+            notification_detail_open = false;
+            notification_detail_scroll = 0;
+        }
+    }
+}
+
 void library_gui::draw(const std::string& role) {
     BeginDrawing();
     ClearBackground(page_background);
@@ -1601,6 +2042,7 @@ void library_gui::draw(const std::string& role) {
         case USER_REQUEST:        draw_user_request(); break;
         case USER_ACTIVE_BORROWS: draw_my_borrows(true); break;
         case USER_HISTORY:        draw_my_borrows(false); break;
+        case USER_NOTIFICATIONS: draw_notifications(); break;
     }
 
     draw_message();

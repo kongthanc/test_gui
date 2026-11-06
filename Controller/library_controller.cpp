@@ -1,15 +1,19 @@
 #include "library_controller.h"
 
-library_controller::library_controller() 
-    : b_service("Data/book.txt"), u_service("Data/user.txt"), 
-      br_service("Data/borrow.txt"), s_service("Data/shift.txt") {
+library_controller::library_controller()
+    : b_service("Data/book.txt"),
+      u_service("Data/user.txt"),
+      br_service("Data/borrow.txt"),
+      s_service("Data/shift.txt"),
+      n_service("Data/notification.txt") {
+
     current_logged_in_user = nullptr;
     request_file = "Data/request.txt";
     position_file = "Data/position.txt";
-    
+
     load_requests();
-    load_positions(); 
-    check_system_overdue(); 
+    load_positions();
+    check_system_overdue();
 }
 
 library_controller::~library_controller() {
@@ -260,26 +264,54 @@ borrow library_controller::peek_next_request() const {
 bool library_controller::approve_next_request() {
     if (book_request_queue.is_empty()) return false;
     borrow req = book_request_queue.front();
-
-    if (borrow_book(req.get_id(), req.get_book_id(), req.get_user_id(), req.get_borrow_date(), req.get_due_date())) {
+    if (borrow_book(req.get_id(), req.get_book_id(),
+                    req.get_user_id(), req.get_borrow_date(),
+                    req.get_due_date())) {
         book_request_queue.pop();
         save_requests();
+        node<book>* found = b_service.get_book_by_id(req.get_book_id());
+        std::string book_name = req.get_book_id();
+
+        if (found != nullptr) {
+            book_name = found->get_data().get_title();
+        }
+
+        n_service.add_notification(
+            req.get_user_id(),
+            "Yêu cầu mượn đã được duyệt",
+            "Yêu cầu mượn sách " + book_name +
+            " (" + req.get_book_id() + ") đã được duyệt."
+        );
         return true;
     }
-    return false; 
+    return false;
 }
 
-bool library_controller::reject_next_request() {
+bool library_controller::reject_next_request(std::string reason) {
     if (book_request_queue.is_empty()) return false;
-    // 1. Lấy thông tin phiếu đang đứng đầu hàng đợi
-    borrow req = book_request_queue.front(); 
-    
-    // 2. Loại bỏ khỏi hàng đợi chờ duyệt
+    borrow req = book_request_queue.front();
     book_request_queue.pop();
-    save_requests(); 
-    
-    // 3. Đẩy sang Lịch sử mượn với trạng thái "Tu choi"
+    save_requests();
     br_service.log_rejected_request(req);
+    node<book>* found = b_service.get_book_by_id(req.get_book_id());
+    std::string book_name = req.get_book_id();
+
+    if (found != nullptr) {
+        book_name = found->get_data().get_title();
+    }
+
+    std::string content = "Yêu cầu mượn sách " + book_name +
+        " (" + req.get_book_id() + ") đã bị từ chối.";
+
+    if (!reason.empty()) {
+        content += " Lý do: " + reason;
+    }
+
+    n_service.add_notification(
+        req.get_user_id(),
+        "Yêu cầu mượn bị từ chối",
+        content
+    );
     return true;
 }
 
@@ -496,3 +528,21 @@ bool library_controller::can_undo_user() const { return !user_undo_stack.empty()
 bool library_controller::undo_user_action(std::string& out_message) { return false; }
 bool library_controller::can_undo_borrow() const { return !borrow_undo_stack.empty(); }
 bool library_controller::undo_borrow_action(std::string& out_message) { return false; }
+
+std::vector<notification> library_controller::get_my_notifications(
+    std::string user_id) const {
+
+    return n_service.get_notifications(user_id);
+}
+
+int library_controller::get_unread_notification_count(
+    std::string user_id) const {
+
+    return n_service.get_unread_count(user_id);
+}
+
+bool library_controller::mark_notification_read(
+    std::string notification_id) {
+
+    return n_service.mark_as_read(notification_id);
+}

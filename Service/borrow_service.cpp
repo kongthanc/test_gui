@@ -171,8 +171,21 @@ linked_list<borrow> borrow_service::get_borrows_by_user(std::string user_id, boo
         if (b.get_user_id() == user_id) {
             // active_only = true: chá»‰ láº¥y phiáº¿u chÆ°a tráº£ (Dang muon hoáº·c Qua han)
             // active_only = false: láº¥y toÃ n bá»™ phiáº¿u cá»§a User, ká»ƒ cáº£ Ä‘Ã£ tráº£
-            if (!active_only || b.get_status() != "Da tra") {
-                result.push_back(b);
+            if (active_only)
+            {
+                if (b.get_status() == "Dang muon" ||
+                    b.get_status() == "Qua han")
+                {
+                    result.push_back(b);
+                }
+            }
+            else
+            {
+                if (b.get_status() == "Da tra" ||
+                    b.get_status() == "Tu choi")
+                {
+                    result.push_back(b);
+                }
             }
         }
         curr = curr->get_next();
