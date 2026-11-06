@@ -7,7 +7,8 @@
 
 namespace {
     void append_codepoint(char* destination, int capacity, int codepoint) {
-        if (destination == nullptr || codepoint < 32 || codepoint > 0x10FFFF ||
+        // Login chi chap nhan ky tu ASCII, khong nhan chu co dau tieng Viet.
+        if (destination == nullptr || codepoint < 32 || codepoint > 126 ||
             (codepoint >= 0xD800 && codepoint <= 0xDFFF)) return;
 
         int byte_count = 0;

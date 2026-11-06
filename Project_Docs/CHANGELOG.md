@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-07 - Xác nhận chức năng và cập nhật backlog
+
+- Người dùng xác nhận chức năng chặn yêu cầu mượn trùng và lọc ký tự tiếng Việt có dấu ở đăng nhập hoạt động ổn.
+- Ghi nhận yêu cầu tinh chỉnh bộ nhập: chuỗi Telex ASCII như `thawngs` phải được giữ nguyên; không nhận ký tự Unicode có dấu.
+- Cập nhật thứ tự ưu tiên: (1) tra cứu người dùng kèm sách đang mượn và trạng thái, (2) thông báo khi đăng ký trùng, (3) layout ôm trọn khung hình, (4) xử lý ngày sai không crash, (5) tinh chỉnh nhập Telex.
+- Đây là cập nhật tài liệu/backlog; chưa có thay đổi mã nguồn cho các nhiệm vụ mới.
+
 ## 2026-11-07 - Danh sách yêu cầu chờ duyệt trong mục đăng ký mượn
 
 - `Controller/library_controller.h/.cpp`: thêm `get_my_pending_requests(user_id)` để lọc các yêu cầu `Cho duyet` của một độc giả; duyệt queue đúng một vòng và giữ nguyên FIFO.

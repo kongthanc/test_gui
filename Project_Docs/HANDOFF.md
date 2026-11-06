@@ -44,12 +44,23 @@
 - Kiểm thử độc lập tầng Controller đã PASS với dữ liệu mẫu: lọc đúng yêu cầu theo User ID, chỉ lấy `Cho duyet`, giữ nguyên FIFO và không làm thay đổi kích thước queue.
 - Chưa xác nhận build/chạy GUI do môi trường hiện tại thiếu `raylib.h`. Cần kiểm tra sau khi tích hợp vào môi trường phát triển Windows/MSYS2 UCRT64.
 
-## 5. Vấn đề đang cần xác minh
+## 5. Trạng thái và backlog tiếp theo
 
-- Lỗi chuông thông báo biến mất sau khi đăng ký hai yêu cầu cùng một sách đã được người dùng xác nhận là đã sửa; không tiếp tục điều tra nếu chưa có báo lỗi mới.
-- `register_book_request()` chưa chặn yêu cầu đang chờ trùng cùng user/sách.
-- `approve_next_request()` có thể giữ yêu cầu lỗi ở đầu queue nếu `borrow_book()` thất bại.
-- Chức năng danh sách yêu cầu chờ duyệt vừa được thêm vào source nhưng chưa build/chạy GUI xác minh do môi trường hiện tại thiếu `raylib.h`.
+Người dùng đã xác nhận các chức năng sau hoạt động ổn:
+- Chặn một độc giả gửi nhiều yêu cầu đang chờ cho cùng một đầu sách.
+- Không nhận ký tự tiếng Việt có dấu trong ô đăng nhập.
+- Danh sách yêu cầu đang chờ duyệt hiển thị trong mục `Đăng ký mượn sách`.
+
+Các việc cần làm tiếp theo, theo đúng thứ tự ưu tiên:
+1. Tra cứu người dùng và hiển thị sách người đó đang mượn kèm trạng thái từng phiếu (`Dang muon`, `Qua han`).
+2. Đổi nội dung thông báo khi đăng ký mượn trùng để nêu rõ nguyên nhân.
+3. Chỉnh giao diện ôm trọn khung cửa sổ và co giãn hợp lý.
+4. Sửa lỗi nhập ngày/tháng/năm sai trong `Đăng ký mượn sách` khiến chương trình bị văng.
+5. Tinh chỉnh đăng nhập: bỏ qua ký tự Unicode có dấu nhưng vẫn giữ nguyên chuỗi Telex ASCII. Ví dụ gõ `thawngs` phải hiển thị `thawngs`, không mất ký tự giữa chừng.
+
+Lưu ý: yêu cầu đăng nhập là không nhận chữ có dấu, không phải chặn các phím Telex ASCII như `a`, `w`, `s`; các ký tự ASCII phải được giữ nguyên trong ô nhập.
+
+Các việc kỹ thuật dài hạn vẫn còn: xử lý yêu cầu lỗi ở đầu FIFO, kiểm tra nhất quán dữ liệu, Undo người dùng/phiếu mượn, rà soát quyền và bảo mật mật khẩu.
 
 ## 6. Cách bắt đầu phiên làm việc
 

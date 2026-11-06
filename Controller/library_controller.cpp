@@ -235,6 +235,26 @@ bool library_controller::register_book_request(
     if (b_node->get_data().get_quantity() <= 0) return false;
     if (due_date < b_date) return false;
 
+    // Khong cho mot doc gia tao nhieu yeu cau dang cho cho cung mot dau sach.
+    bool has_duplicate_pending_request = false;
+    int request_count = book_request_queue.get_size();
+
+    for (int i = 0; i < request_count; ++i) {
+        borrow pending_request = book_request_queue.front();
+        book_request_queue.pop();
+
+        if (pending_request.get_user_id() == user_id &&
+            pending_request.get_book_id() == book_id &&
+            pending_request.get_status() == "Cho duyet") {
+            has_duplicate_pending_request = true;
+        }
+
+        book_request_queue.push(pending_request);
+    }
+
+    if (has_duplicate_pending_request)
+        return false;
+
     if (br_service.is_user_borrowing_book(user_id, book_id))
         return false;
 

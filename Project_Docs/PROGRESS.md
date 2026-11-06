@@ -58,17 +58,20 @@
 
 ## 3. Chưa hoàn thiện hoặc cần xác minh
 
+- [ ] **P1:** Tra cứu người dùng, hiển thị sách người đó đang mượn kèm trạng thái từng phiếu (`Dang muon`, `Qua han`).
+- [ ] **P1:** Đổi thông báo khi đăng ký mượn trùng để nêu rõ nguyên nhân, thay vì báo thất bại chung chung.
+- [ ] **P1:** Chỉnh giao diện để nội dung ôm trọn khung cửa sổ, co giãn hợp lý theo kích thước màn hình.
+- [ ] **P1:** Sửa lỗi nhập ngày/tháng/năm không hợp lệ trong `Đăng ký mượn sách` khiến chương trình bị văng; cần báo lỗi thay vì crash.
+- [ ] **P2:** Tinh chỉnh đăng nhập: bỏ qua ký tự Unicode có dấu nhưng giữ nguyên chuỗi Telex ASCII, ví dụ `thawngs` phải hiển thị nguyên `thawngs`.
 - [ ] Kiểm thử toàn bộ luồng trên GUI với cả ba vai trò.
 - [ ] Kiểm thử biên cho đăng ký, duyệt, từ chối, trả sách, quá hạn và xóa dữ liệu.
-- [ ] Chặn đăng ký trùng yêu cầu đang chờ cho cùng độc giả và cùng đầu sách. `register_book_request()` hiện chưa kiểm tra yêu cầu trùng trong hàng đợi.
-- [ ] Xử lý trường hợp yêu cầu đầu hàng đợi không thể duyệt. `approve_next_request()` hiện trả `false` mà không lấy yêu cầu lỗi khỏi đầu hàng, có thể khiến yêu cầu sau bị chặn cho đến khi xử lý yêu cầu đầu.
+- [ ] Xử lý trường hợp yêu cầu đầu hàng đợi không thể duyệt; cần quy tắc rõ ràng để tránh yêu cầu lỗi chặn FIFO.
 - [ ] Kiểm tra tính nhất quán giữa `request.txt`, `borrow.txt` và thông báo sau các tình huống lỗi hoặc thoát đột ngột.
 - [ ] Triển khai Undo người dùng và Undo phiếu mượn. Hai hàm hiện trả `false`.
 - [ ] Rà soát kiểm tra quyền ở tầng Controller/Service, không chỉ ẩn/hiện menu GUI.
 - [ ] Rà soát bảo vệ dữ liệu đăng nhập. `user.txt` hiện lưu mật khẩu dạng văn bản thuần.
-- [ ] Kiểm thử nhập tiếng Việt có dấu trên môi trường Windows thực tế.
 - [ ] Xác minh build sạch trên máy/môi trường mục tiêu.
-- [ ] Kiểm tra xử lý dữ liệu lỗi, dòng trống, ngày sai định dạng và file không mở được.
+- [ ] Kiểm tra xử lý dữ liệu lỗi, dòng trống và file không mở được.
 
 ## 4. Vấn đề kỹ thuật đã xác định từ mã nguồn
 
@@ -99,25 +102,24 @@ GUI phân nhánh menu theo role, nhưng cần rà soát các hàm Controller đ�
 
 ## 5. Nhiệm vụ đang làm
 
-**Bổ sung danh sách yêu cầu mượn đang chờ duyệt ngay trong mục “Đăng ký mượn sách” của role `user`.**
+Người dùng đã xác nhận các chức năng sau hoạt động ổn:
+- Chặn một độc giả gửi nhiều yêu cầu đang chờ cho cùng một đầu sách.
+- Không nhận ký tự tiếng Việt có dấu trong ô đăng nhập.
+- Danh sách yêu cầu đang chờ duyệt hiển thị ngay trong mục `Đăng ký mượn sách`.
 
-Quyết định nghiệp vụ/UI đã thống nhất:
-- Không tạo mục sidebar hoặc page enum mới.
-- Thêm nút phụ `Danh sách yêu cầu (N)` trong màn hình `USER_REQUEST`; `N` là số yêu cầu `Cho duyet` của đúng tài khoản đang đăng nhập.
-- Nhấn nút sẽ chuyển nội dung trong cùng màn hình sang bảng danh sách yêu cầu; có nút quay lại phần đăng ký.
-- Chỉ hiển thị yêu cầu đang chờ admin duyệt. Yêu cầu đã duyệt/từ chối tiếp tục được theo dõi ở các khu vực mượn, lịch sử và thông báo hiện có.
-- Tái sử dụng `book_request_queue` và `Data/request.txt`, không tạo Model hay tệp dữ liệu mới.
+**Nhiệm vụ tiếp theo: tra cứu người dùng và sách đang mượn.** Khi chọn/tra cứu một người dùng, giao diện cần hiển thị các sách người đó đang mượn cùng trạng thái hiện tại của từng phiếu. Đây là ưu tiên số 1.
 
-Đã bổ sung mã nguồn trong `Controller/library_controller.{h,cpp}` và `GUI/library_gui.{h,cpp}`. Kiểm thử độc lập tầng Controller đã PASS: lọc đúng 3 yêu cầu của `US06`, không trả yêu cầu cho `US01`, giữ thứ tự `REQ6 → REQ7 → REQ8` và không làm thay đổi tổng số phần tử Queue. Chưa build được GUI trong môi trường hiện tại vì thiếu `raylib.h`; cần build/chạy trên Windows/MSYS2 UCRT64 trước khi đánh dấu hoàn tất toàn chức năng.
+Các nhiệm vụ tiếp theo theo thứ tự: thông báo khi đăng ký trùng; layout ôm trọn cửa sổ; xử lý ngày sai không crash; tinh chỉnh nhập Telex ở màn hình đăng nhập.
 
-## 6. Thứ tự ưu tiên đề xuất
+## 6. Thứ tự ưu tiên thực hiện
 
-1. Xác minh luồng chuông/thông báo và trạng thái role bằng cách tái hiện lỗi.
-2. Chốt quy tắc chống đăng ký trùng yêu cầu.
-3. Chốt cách xử lý yêu cầu đầu hàng đợi không thể duyệt.
-4. Kiểm thử nhất quán `request.txt` / `borrow.txt` / `notification.txt`.
-5. Hoàn thiện các chức năng còn thiếu và kiểm thử toàn hệ thống.
-6. Rà soát bảo mật, xử lý lỗi file và dữ liệu đầu vào.
+1. **Tra cứu người dùng và sách đang mượn:** hiển thị sách cùng trạng thái `Dang muon`/`Qua han` theo người dùng được chọn.
+2. **Thông báo đăng ký trùng:** đổi nội dung phản hồi để nêu rõ yêu cầu/sách đã tồn tại và lý do không thể gửi thêm.
+3. **Bố cục giao diện:** để nội dung ôm trọn khung cửa sổ, co giãn theo kích thước cửa sổ.
+4. **Ngày không hợp lệ:** ngăn crash khi nhập ngày/tháng/năm sai trong `Đăng ký mượn sách`, hiển thị cảnh báo thân thiện.
+5. **Nhập Telex ở đăng nhập:** giữ nguyên chuỗi ASCII đang gõ như `thawngs`, đồng thời không nhận ký tự Unicode có dấu.
+6. Kiểm thử toàn bộ luồng, xử lý lỗi dữ liệu/file và rà soát quyền.
+7. Hoàn thiện Undo, nhất quán dữ liệu và bảo mật mật khẩu.
 
 ## 7. Quy tắc cập nhật tiến độ
 

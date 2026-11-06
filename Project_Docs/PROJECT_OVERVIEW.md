@@ -135,6 +135,7 @@ library_controller
 ### 5.1. Đăng nhập và phân quyền
 
 - Đăng nhập bằng ID và mật khẩu thông qua `user_service`.
+- Ô đăng nhập chỉ nhận ASCII; cần bảo đảm lọc Unicode có dấu không làm mất chuỗi Telex ASCII đang nhập, ví dụ `thawngs`.
 - Vai trò được lưu bằng chuỗi `manager`, `admin`, `user`.
 - Sidebar GUI được tạo theo vai trò.
 - `Model/role_permission.h` có các lớp quyền và `permission_factory` cho luồng menu console/kiến trúc quyền; GUI hiện phân nhánh menu trực tiếp theo chuỗi vai trò.
@@ -223,7 +224,15 @@ Lưu ý:
 - `borrow.txt` có thể chứa phiếu mượn và bản ghi yêu cầu bị từ chối. Mã `REQ...` được dùng để nhận diện bản ghi yêu cầu trong một số xử lý.
 - Mật khẩu hiện được lưu trực tiếp trong `user.txt`, chưa thấy cơ chế băm mật khẩu trong phần mã đã rà soát. Không dùng dữ liệu tài khoản thật hoặc mật khẩu đang sử dụng ở nơi khác trong bộ dữ liệu mẫu.
 
-## 7. Quy ước phát triển
+## 7. Backlog ưu tiên tiếp theo
+
+1. Tra cứu người dùng và hiển thị các sách người đó đang mượn kèm trạng thái `Dang muon`/`Qua han`.
+2. Làm rõ thông báo khi đăng ký mượn trùng.
+3. Chỉnh layout để nội dung ôm trọn khung cửa sổ và co giãn hợp lý.
+4. Chặn crash khi nhập ngày/tháng/năm không hợp lệ trong màn hình đăng ký mượn.
+5. Tinh chỉnh bộ nhập đăng nhập để không nhận Unicode có dấu nhưng vẫn hiển thị đầy đủ chuỗi Telex ASCII, ví dụ `thawngs`.
+
+## 8. Quy ước phát triển
 
 - Khi sửa code, phải nêu chính xác file, hàm và vị trí.
 - Ưu tiên cung cấp nguyên hàm hoặc đoạn thay thế đầy đủ để dễ áp dụng.
