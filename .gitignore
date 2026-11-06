@@ -3,6 +3,7 @@
 *.o
 *.obj
 *.pdb
+*.txt
 Data/
 .vscode/tasks.json
 all_code.txt

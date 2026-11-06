@@ -574,9 +574,21 @@ void library_gui::draw_books(const std::string& role, bool user_search) {
     if (list_page >= page_count) list_page = page_count - 1;
 
     DrawText("Kết quả tìm kiếm", 325, 250, 18, DARKGRAY);
-    const char* headers[] = {"Mã", "Tên sách", "Tác giả", "Thể loại"};
-    const int columns[] = {330, 405, 675, 865};
-    draw_table_header(headers, columns, 4, 278);
+    const char *headers[] = {
+        "Mã", "Tên sách", "Tác giả", "Thể loại", "Còn", "Thao tác"};
+    const int columns[] = {330, 390, 610, 785, 915, 1030};
+
+    if (user_search)
+    {
+        draw_table_header(headers, columns, 6, 278);
+    }
+    else
+    {
+        const char *manager_headers[] = {
+            "Mã", "Tên sách", "Tác giả", "Thể loại"};
+        const int manager_columns[] = {330, 405, 675, 865};
+        draw_table_header(manager_headers, manager_columns, 4, 278);
+    }
 
     node<book>* current = books.get_head();
     int skip = list_page * BOOKS_PER_PAGE;
@@ -593,10 +605,33 @@ void library_gui::draw_books(const std::string& role, bool user_search) {
                                            : (row % 2 == 0 ? Color{245, 248, 252, 255}
                                                            : Color{232, 239, 248, 255}));
         DrawText(item.get_id().c_str(), 330, y + 8, 15, DARKGRAY);
-        DrawText(item.get_title().c_str(), 405, y + 8, 15, DARKGRAY);
-        DrawText(item.get_author().c_str(), 675, y + 8, 15, DARKGRAY);
-        DrawText(item.get_category().c_str(), 865, y + 8, 15, DARKGRAY);
-        if (CheckCollisionPointRec(GetMousePosition(), row_box) &&
+
+        if (user_search)
+        {
+            DrawText(item.get_title().c_str(), 390, y + 8, 14, DARKGRAY);
+            DrawText(item.get_author().c_str(), 610, y + 8, 14, DARKGRAY);
+            DrawText(item.get_category().c_str(), 785, y + 8, 14, DARKGRAY);
+            DrawText(TextFormat("%d", item.get_quantity()),
+                     925, y + 8, 15, DARKGREEN);
+
+            if (draw_button({1030, (float)y + 2, 115, 28},
+                            "Mượn sách", item.get_quantity() > 0 ? BLUE : GRAY) &&
+                item.get_quantity() > 0)
+            {
+                std::string book_id = item.get_id();
+                open_page(USER_REQUEST);
+                std::strncpy(field_b, book_id.c_str(), sizeof(field_b) - 1);
+                field_b[sizeof(field_b) - 1] = '\0';
+                return;
+            }
+        }
+        else
+        {
+            DrawText(item.get_title().c_str(), 405, y + 8, 15, DARKGRAY);
+            DrawText(item.get_author().c_str(), 675, y + 8, 15, DARKGRAY);
+            DrawText(item.get_category().c_str(), 865, y + 8, 15, DARKGRAY);
+        }
+        if (CheckCollisionPointRec(ui_layout::mouse_position(), row_box) &&
             IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
             if (selected_book_id != item.get_id()) suggestion_page = 0;
             selected_book_id = item.get_id();
