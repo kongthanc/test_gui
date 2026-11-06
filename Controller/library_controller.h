@@ -40,7 +40,7 @@ private:
     std::string position_file;
 
     void load_positions();
-    void save_positions(); // HÀM MỚI: Lưu vị trí kệ sách
+    void save_positions(); 
 
     stack<action_log<book>> book_undo_stack;
     stack<action_log<user>> user_undo_stack;
@@ -58,10 +58,13 @@ public:
 
     // ================= 2. NGHIỆP VỤ SÁCH (BOOK) =================
     linked_list<book> search_books(std::string keyword);
-    linked_list<book> get_related_books(std::string category, std::string exclude_book_id);
-   linked_list<book> get_recommended_books(std::string author, std::string category, std::string exclude_book_id);
+    // Hàm gộp duy nhất: Sử dụng Graph BFS bên trong
+    linked_list<book> get_recommended_books(std::string author, std::string category, std::string exclude_book_id);
+    std::string get_hot_category();
     int get_user_active_borrow_count(std::string user_id) const;
-    bool add_new_book(std::string id, std::string title, std::string author, std::string category, int qty, int year,std::string shelf);
+    
+    // Đã thêm tham số shelf mặc định
+    bool add_new_book(std::string id, std::string title, std::string author, std::string category, int qty, int year, std::string shelf = "Chua xep ke");
     bool update_book_info(std::string old_id, book book_n);
     bool delete_book(std::string id);
     node<book>* get_book_by_id(std::string id);
@@ -77,10 +80,9 @@ public:
     node<borrow>* get_borrow_by_id(std::string id);
     linked_list<borrow> get_my_borrows(std::string user_id, bool active_only);
     void check_system_overdue(); 
-    int get_user_active_borrow_count(std::string user_id) const;
 
     // ================= 4. HÀNG ĐỢI ĐĂNG KÝ (QUEUE) =================
-    std::string generate_request_id(); // HÀM MỚI: Tự sinh mã REQ
+    std::string generate_request_id(); 
     bool register_book_request(std::string req_id, std::string book_id, std::string user_id, date b_date, date due_date);
     bool has_pending_requests() const;
     borrow peek_next_request() const;

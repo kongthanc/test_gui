@@ -624,8 +624,7 @@ void library_gui::draw_books(const std::string& role, bool user_search) {
     book source = selected_node->get_data();
     DrawText(TextFormat("Dựa trên: %s", source.get_title().c_str()),
              470, 505, 16, DARKGRAY);
-    linked_list<book> suggestions = controller.get_recommended_books(
-        source.get_author(), source.get_category(), source.get_id());
+    linked_list<book> suggestions = controller.get_recommended_books(source.get_author(), source.get_category(), source.get_id());
 
     if (suggestions.get_size() == 0) {
         DrawText("Chưa có sách cùng tác giả hoặc thể loại.", 330, 540, 17, GRAY);
@@ -688,15 +687,18 @@ void library_gui::draw_book_form(bool editing) {
         draw_input({740, 280, 400, 44}, "Thể loại", field_d, sizeof(field_d));
         draw_input({340, 365, 360, 44}, "Số lượng (0 - 10000)", field_e, sizeof(field_e));
         draw_input({740, 365, 400, 44}, "Năm xuất bản", field_f, sizeof(field_f));
+        
+        // Form lấy vị trí kệ
+        draw_input({340, 450, 800, 44}, "Vị trí kệ sách (Ví dụ: Ke A1)", field_g, sizeof(field_g));
 
-        if (draw_button({530, 470, 220, 48}, "Lưu sách")) {
+        if (draw_button({530, 540, 220, 48}, "Lưu sách")) {
             int quantity = 0;
             int year = 0;
             if (is_blank(field_a) || is_blank(field_b) || is_blank(field_c) ||
-                is_blank(field_d) ||
+                is_blank(field_d) || is_blank(field_g) ||
                 !read_integer(field_e, quantity, 0, 10000) ||
                 !read_integer(field_f, year, 1000, 9999)) {
-                set_message("Nhập đầy đủ thông tin và số hợp lệ.", true);
+                set_message("Nhập đầy đủ thông tin (cả kệ sách) và số hợp lệ.", true);
             } else if (controller.get_book_by_id(field_a) != nullptr) {
                 set_message("Không thêm được: mã sách đã tồn tại.", true);
             } else {
@@ -704,16 +706,16 @@ void library_gui::draw_book_form(bool editing) {
                 std::string title = field_b;
                 std::string author = field_c;
                 std::string category = field_d;
+                std::string shelf = field_g;
                 ask_confirm("Xác nhận thêm sách",
                             "Thêm sách mới vào thư viện?\n"
                             "Mã sách: " + id + "\n"
-                            "Tên sách: " + title + "\n"
-                            "Số lượng: " + std::to_string(quantity),
+                            "Tên sách: " + title,
                             "Thêm sách", BLUE,
-                            [this, id, title, author, category, quantity, year]() {
-                    if (controller.add_new_book(id, title, author, category,
-                                                quantity, year)) {
-                        set_message("Đã thêm sách mới.");
+                            [this, id, title, author, category, quantity, year, shelf]() {
+                    // TRUYỀN ĐỦ 7 THAM SỐ (CÓ SHELF) ĐỂ HẾT BÁO LỖI
+                    if (controller.add_new_book(id, title, author, category, quantity, year, shelf)) {
+                        set_message("Đã thêm sách mới và lưu vị trí kệ.");
                         clear_fields();
                     } else {
                         set_message("Không thêm được: mã sách đã tồn tại.", true);
@@ -724,21 +726,25 @@ void library_gui::draw_book_form(bool editing) {
         return;
     }
 
-    draw_input({340, 195, 360, 44}, "Mã sách cũ", field_a, sizeof(field_a));
-    draw_input({740, 195, 400, 44}, "Mã sách mới", field_b, sizeof(field_b));
-    draw_input({340, 280, 360, 44}, "Tên sách", field_c, sizeof(field_c));
-    draw_input({740, 280, 400, 44}, "Tác giả", field_d, sizeof(field_d));
-    draw_input({340, 365, 360, 44}, "Thể loại", field_e, sizeof(field_e));
-    draw_input({740, 365, 400, 44}, "Số lượng (0 - 10000)", field_f, sizeof(field_f));
-    draw_input({340, 450, 360, 44}, "Năm xuất bản", field_g, sizeof(field_g));
+    // --- PHẦN EDITING (SỬA SÁCH) ---
+    draw_input({340, 185, 360, 44}, "Mã sách cũ", field_a, sizeof(field_a));
+    draw_input({740, 185, 400, 44}, "Mã sách mới", field_b, sizeof(field_b));
+    draw_input({340, 260, 360, 44}, "Tên sách", field_c, sizeof(field_c));
+    draw_input({740, 260, 400, 44}, "Tác giả", field_d, sizeof(field_d));
+    draw_input({340, 335, 360, 44}, "Thể loại", field_e, sizeof(field_e));
+    draw_input({740, 335, 400, 44}, "Số lượng (0 - 10000)", field_f, sizeof(field_f));
+    
+    static char temp_year_field[96] = ""; 
+    draw_input({340, 410, 360, 44}, "Năm xuất bản", temp_year_field, sizeof(temp_year_field));
+    draw_input({740, 410, 400, 44}, "Vị trí kệ sách", field_g, sizeof(field_g));
 
-    if (draw_button({530, 545, 220, 48}, "Cập nhật sách", ORANGE)) {
+    if (draw_button({530, 500, 220, 48}, "Cập nhật sách", ORANGE)) {
         int quantity = 0;
         int year = 0;
         if (is_blank(field_a) || is_blank(field_b) || is_blank(field_c) ||
-            is_blank(field_d) || is_blank(field_e) ||
+            is_blank(field_d) || is_blank(field_e) || is_blank(field_g) ||
             !read_integer(field_f, quantity, 0, 10000) ||
-            !read_integer(field_g, year, 1000, 9999)) {
+            !read_integer(temp_year_field, year, 1000, 9999)) {
             set_message("Nhập đầy đủ thông tin và số hợp lệ.", true);
         } else if (controller.get_book_by_id(field_a) == nullptr) {
             set_message("Không tìm thấy mã sách cũ.", true);
@@ -748,25 +754,24 @@ void library_gui::draw_book_form(bool editing) {
             std::string title = field_c;
             std::string author = field_d;
             std::string category = field_e;
+            std::string shelf = field_g;
             ask_confirm("Xác nhận cập nhật sách",
                         "Cập nhật thông tin sách " + old_id + "?\n"
-                        "Mã sách mới: " + new_id + "\n"
-                        "Tên sách: " + title + "\n"
-                        "Số lượng: " + std::to_string(quantity),
+                        "Mã sách mới: " + new_id,
                         "Cập nhật", ORANGE,
-                        [this, old_id, new_id, title, author, category, quantity, year]() {
+                        [this, old_id, new_id, title, author, category, quantity, year, shelf]() {
                 book replacement(new_id, title, author, category, quantity, year);
                 if (controller.update_book_info(old_id, replacement)) {
                     set_message("Đã cập nhật thông tin sách.");
                     clear_fields();
+                    temp_year_field[0] = '\0';
                 } else {
-                    set_message("Cập nhật thất bại: kiểm tra mã sách cũ và mã sách mới.", true);
+                    set_message("Cập nhật thất bại.", true);
                 }
             });
         }
     }
 }
-
 void library_gui::draw_book_delete() {
     DrawText("Xóa sách", CONTENT_X + 25, 120, 30, DARKBLUE);
     draw_back_button();
@@ -800,7 +805,6 @@ void library_gui::draw_book_delete() {
         });
     }
 }
-
 void library_gui::draw_borrows() {
     DrawText("Quản lý phiếu mượn", CONTENT_X + 25, 120, 30, DARKBLUE);
     draw_back_button();

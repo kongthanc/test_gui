@@ -91,19 +91,6 @@ linked_list<book> library_controller::search_books(std::string keyword) {
     return b_service.search_books(keyword);
 }
 
-linked_list<book> library_controller::get_related_books(std::string category, std::string exclude_book_id) {
-    linked_list<book> result;
-    linked_list<book> same_cat = b_service.search_books(category);
-    node<book>* curr = same_cat.get_head();
-    while (curr != nullptr) {
-        if (curr->get_data().get_id() != exclude_book_id) {
-            result.push_back(curr->get_data());
-        }
-        curr = curr->get_next();
-    }
-    return result;
-}
-
 // LƯU KỆ SÁCH KHI THÊM SÁCH
 bool library_controller::add_new_book(std::string id, std::string title, std::string author, std::string category, int qty, int year, std::string shelf) {
     book new_b(id, title, author, category, qty, year);
@@ -373,18 +360,16 @@ bool library_controller::has_active_borrows(std::string user_id) const {
     return br_service.has_active_borrows(user_id);
 }
 
-linked_list<book> library_controller::filter_books_multi(std::string title, std::string author, std::string category, int year) {
-    return b_service.filter_books(title, author, category, year);
-}
-
 int library_controller::get_user_active_borrow_count(std::string user_id) const {
     return br_service.count_active_borrows_by_user(user_id);
 }
 
 // THUẬT TOÁN ĐỒ THỊ (GRAPH BFS) - GỢI Ý SÁCH
-linked_list<book> library_controller::get_graph_recommendations(std::string book_id) {
+// ================= TÍNH NĂNG GỢI Ý SÁCH (DÙNG ĐỒ THỊ GRAPH BFS) =================
+linked_list<book> library_controller::get_recommended_books(std::string author, std::string category, std::string exclude_book_id) {
     linked_list<book> all = b_service.search_books("");
-    node<book>* target = b_service.get_book_by_id(book_id);
+    node<book>* target = b_service.get_book_by_id(exclude_book_id);
+    
     if (target == nullptr || all.get_size() <= 1) return linked_list<book>();
 
     int cap = all.get_size() + 2; 
@@ -396,6 +381,7 @@ linked_list<book> library_controller::get_graph_recommendations(std::string book
         curr = curr->get_next();
     }
 
+    // Nối các đỉnh nếu có chung Thể loại hoặc chung Tác giả (Lấy theo 2 tham số GUI truyền xuống)
     for (int i = 0; i < g.get_num_vertices(); ++i) {
         book b1 = g.get_vertex_data(i);
         for (int j = i + 1; j < g.get_num_vertices(); ++j) {
@@ -407,15 +393,19 @@ linked_list<book> library_controller::get_graph_recommendations(std::string book
         }
     }
 
+    // Chạy BFS 
     linked_list<book> bfs_list = graph_algo::BFS(g, target->get_data());
     linked_list<book> result;
     node<book>* r_curr = bfs_list.get_head();
+    
+    // Lọc bỏ chính cuốn sách đang được chọn
     while (r_curr != nullptr) {
-        if (!(r_curr->get_data() == target->get_data())) {
+        if (!(r_curr->get_data() == target->get_data())) { 
             result.push_back(r_curr->get_data());
         }
         r_curr = r_curr->get_next();
     }
+    
     return result;
 }
 
