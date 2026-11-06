@@ -56,6 +56,8 @@ namespace {
         if (status == "Da tra") return "Đã trả";
         if (status == "Dang muon") return "Đang mượn";
         if (status == "Qua han") return "Quá hạn";
+        if (status == "Cho duyet") return "Chờ duyệt";
+        if (status == "Tu choi") return "Bị từ chối";
         return status;
     }
 
@@ -557,6 +559,12 @@ void library_gui::draw_books(const std::string& role, bool user_search) {
         if (draw_button({CONTENT_X + 670, 245, 140, 44}, "Xóa sách", RED)) {
             open_page(BOOK_DELETE);
             return;
+        }
+        if (draw_button({CONTENT_X + 770, 185, 105, 44}, "Hoàn Tác", PURPLE)) {
+            std::string msg;
+            bool ok = controller.undo_last_book_action(msg);
+            set_message(msg, !ok);
+            list_page = 0; // Đưa về trang 1 để xem kết quả hoàn tác
         }
     }
 

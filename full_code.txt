@@ -383,19 +383,6 @@ linked_list<book> library_controller::search_books(std::string keyword) {
     return b_service.search_books(keyword);
 }
 
-linked_list<book> library_controller::get_related_books(std::string category, std::string exclude_book_id) {
-    linked_list<book> result;
-    linked_list<book> same_cat = b_service.search_books(category);
-    node<book>* curr = same_cat.get_head();
-    while (curr != nullptr) {
-        if (curr->get_data().get_id() != exclude_book_id) {
-            result.push_back(curr->get_data());
-        }
-        curr = curr->get_next();
-    }
-    return result;
-}
-
 // LÆ¯U Ká»† SÃCH KHI THÃŠM SÃCH
 bool library_controller::add_new_book(std::string id, std::string title, std::string author, std::string category, int qty, int year, std::string shelf) {
     book new_b(id, title, author, category, qty, year);
@@ -665,18 +652,16 @@ bool library_controller::has_active_borrows(std::string user_id) const {
     return br_service.has_active_borrows(user_id);
 }
 
-linked_list<book> library_controller::filter_books_multi(std::string title, std::string author, std::string category, int year) {
-    return b_service.filter_books(title, author, category, year);
-}
-
 int library_controller::get_user_active_borrow_count(std::string user_id) const {
     return br_service.count_active_borrows_by_user(user_id);
 }
 
 // THUáº¬T TOÃN Äá»’ THá»Š (GRAPH BFS) - Gá»¢I Ã SÃCH
-linked_list<book> library_controller::get_graph_recommendations(std::string book_id) {
+// ================= TÃNH NÄ‚NG Gá»¢I Ã SÃCH (DÃ™NG Äá»’ THá»Š GRAPH BFS) =================
+linked_list<book> library_controller::get_recommended_books(std::string author, std::string category, std::string exclude_book_id) {
     linked_list<book> all = b_service.search_books("");
-    node<book>* target = b_service.get_book_by_id(book_id);
+    node<book>* target = b_service.get_book_by_id(exclude_book_id);
+    
     if (target == nullptr || all.get_size() <= 1) return linked_list<book>();
 
     int cap = all.get_size() + 2; 
@@ -688,6 +673,7 @@ linked_list<book> library_controller::get_graph_recommendations(std::string book
         curr = curr->get_next();
     }
 
+    // Ná»‘i cÃ¡c Ä‘á»‰nh náº¿u cÃ³ chung Thá»ƒ loáº¡i hoáº·c chung TÃ¡c giáº£ (Láº¥y theo 2 tham sá»‘ GUI truyá»n xuá»‘ng)
     for (int i = 0; i < g.get_num_vertices(); ++i) {
         book b1 = g.get_vertex_data(i);
         for (int j = i + 1; j < g.get_num_vertices(); ++j) {
@@ -699,15 +685,19 @@ linked_list<book> library_controller::get_graph_recommendations(std::string book
         }
     }
 
+    // Cháº¡y BFS 
     linked_list<book> bfs_list = graph_algo::BFS(g, target->get_data());
     linked_list<book> result;
     node<book>* r_curr = bfs_list.get_head();
+    
+    // Lá»c bá» chÃ­nh cuá»‘n sÃ¡ch Ä‘ang Ä‘Æ°á»£c chá»n
     while (r_curr != nullptr) {
-        if (!(r_curr->get_data() == target->get_data())) {
+        if (!(r_curr->get_data() == target->get_data())) { 
             result.push_back(r_curr->get_data());
         }
         r_curr = r_curr->get_next();
     }
+    
     return result;
 }
 
@@ -810,7 +800,7 @@ private:
     std::string position_file;
 
     void load_positions();
-    void save_positions(); // HÃ€M Má»šI: LÆ°u vá»‹ trÃ­ ká»‡ sÃ¡ch
+    void save_positions(); 
 
     stack<action_log<book>> book_undo_stack;
     stack<action_log<user>> user_undo_stack;
@@ -828,10 +818,13 @@ public:
 
     // ================= 2. NGHIá»†P Vá»¤ SÃCH (BOOK) =================
     linked_list<book> search_books(std::string keyword);
-    linked_list<book> get_related_books(std::string category, std::string exclude_book_id);
-   linked_list<book> get_recommended_books(std::string author, std::string category, std::string exclude_book_id);
+    // HÃ m gá»™p duy nháº¥t: Sá»­ dá»¥ng Graph BFS bÃªn trong
+    linked_list<book> get_recommended_books(std::string author, std::string category, std::string exclude_book_id);
+    std::string get_hot_category();
     int get_user_active_borrow_count(std::string user_id) const;
-    bool add_new_book(std::string id, std::string title, std::string author, std::string category, int qty, int year,std::string shelf);
+    
+    // ÄÃ£ thÃªm tham sá»‘ shelf máº·c Ä‘á»‹nh
+    bool add_new_book(std::string id, std::string title, std::string author, std::string category, int qty, int year, std::string shelf = "Chua xep ke");
     bool update_book_info(std::string old_id, book book_n);
     bool delete_book(std::string id);
     node<book>* get_book_by_id(std::string id);
@@ -847,10 +840,9 @@ public:
     node<borrow>* get_borrow_by_id(std::string id);
     linked_list<borrow> get_my_borrows(std::string user_id, bool active_only);
     void check_system_overdue(); 
-    int get_user_active_borrow_count(std::string user_id) const;
 
     // ================= 4. HÃ€NG Äá»¢I ÄÄ‚NG KÃ (QUEUE) =================
-    std::string generate_request_id(); // HÃ€M Má»šI: Tá»± sinh mÃ£ REQ
+    std::string generate_request_id(); 
     bool register_book_request(std::string req_id, std::string book_id, std::string user_id, date b_date, date due_date);
     bool has_pending_requests() const;
     borrow peek_next_request() const;
@@ -1521,8 +1513,7 @@ void library_gui::draw_books(const std::string& role, bool user_search) {
     book source = selected_node->get_data();
     DrawText(TextFormat("Dá»±a trÃªn: %s", source.get_title().c_str()),
              470, 505, 16, DARKGRAY);
-    linked_list<book> suggestions = controller.get_recommended_books(
-        source.get_author(), source.get_category(), source.get_id());
+    linked_list<book> suggestions = controller.get_recommended_books(source.get_author(), source.get_category(), source.get_id());
 
     if (suggestions.get_size() == 0) {
         DrawText("ChÆ°a cÃ³ sÃ¡ch cÃ¹ng tÃ¡c giáº£ hoáº·c thá»ƒ loáº¡i.", 330, 540, 17, GRAY);
@@ -1585,15 +1576,18 @@ void library_gui::draw_book_form(bool editing) {
         draw_input({740, 280, 400, 44}, "Thá»ƒ loáº¡i", field_d, sizeof(field_d));
         draw_input({340, 365, 360, 44}, "Sá»‘ lÆ°á»£ng (0 - 10000)", field_e, sizeof(field_e));
         draw_input({740, 365, 400, 44}, "NÄƒm xuáº¥t báº£n", field_f, sizeof(field_f));
+        
+        // Form láº¥y vá»‹ trÃ­ ká»‡
+        draw_input({340, 450, 800, 44}, "Vá»‹ trÃ­ ká»‡ sÃ¡ch (VÃ­ dá»¥: Ke A1)", field_g, sizeof(field_g));
 
-        if (draw_button({530, 470, 220, 48}, "LÆ°u sÃ¡ch")) {
+        if (draw_button({530, 540, 220, 48}, "LÆ°u sÃ¡ch")) {
             int quantity = 0;
             int year = 0;
             if (is_blank(field_a) || is_blank(field_b) || is_blank(field_c) ||
-                is_blank(field_d) ||
+                is_blank(field_d) || is_blank(field_g) ||
                 !read_integer(field_e, quantity, 0, 10000) ||
                 !read_integer(field_f, year, 1000, 9999)) {
-                set_message("Nháº­p Ä‘áº§y Ä‘á»§ thÃ´ng tin vÃ  sá»‘ há»£p lá»‡.", true);
+                set_message("Nháº­p Ä‘áº§y Ä‘á»§ thÃ´ng tin (cáº£ ká»‡ sÃ¡ch) vÃ  sá»‘ há»£p lá»‡.", true);
             } else if (controller.get_book_by_id(field_a) != nullptr) {
                 set_message("KhÃ´ng thÃªm Ä‘Æ°á»£c: mÃ£ sÃ¡ch Ä‘Ã£ tá»“n táº¡i.", true);
             } else {
@@ -1601,16 +1595,16 @@ void library_gui::draw_book_form(bool editing) {
                 std::string title = field_b;
                 std::string author = field_c;
                 std::string category = field_d;
+                std::string shelf = field_g;
                 ask_confirm("XÃ¡c nháº­n thÃªm sÃ¡ch",
                             "ThÃªm sÃ¡ch má»›i vÃ o thÆ° viá»‡n?\n"
                             "MÃ£ sÃ¡ch: " + id + "\n"
-                            "TÃªn sÃ¡ch: " + title + "\n"
-                            "Sá»‘ lÆ°á»£ng: " + std::to_string(quantity),
+                            "TÃªn sÃ¡ch: " + title,
                             "ThÃªm sÃ¡ch", BLUE,
-                            [this, id, title, author, category, quantity, year]() {
-                    if (controller.add_new_book(id, title, author, category,
-                                                quantity, year)) {
-                        set_message("ÄÃ£ thÃªm sÃ¡ch má»›i.");
+                            [this, id, title, author, category, quantity, year, shelf]() {
+                    // TRUYá»€N Äá»¦ 7 THAM Sá» (CÃ“ SHELF) Äá»‚ Háº¾T BÃO Lá»–I
+                    if (controller.add_new_book(id, title, author, category, quantity, year, shelf)) {
+                        set_message("ÄÃ£ thÃªm sÃ¡ch má»›i vÃ  lÆ°u vá»‹ trÃ­ ká»‡.");
                         clear_fields();
                     } else {
                         set_message("KhÃ´ng thÃªm Ä‘Æ°á»£c: mÃ£ sÃ¡ch Ä‘Ã£ tá»“n táº¡i.", true);
@@ -1621,21 +1615,25 @@ void library_gui::draw_book_form(bool editing) {
         return;
     }
 
-    draw_input({340, 195, 360, 44}, "MÃ£ sÃ¡ch cÅ©", field_a, sizeof(field_a));
-    draw_input({740, 195, 400, 44}, "MÃ£ sÃ¡ch má»›i", field_b, sizeof(field_b));
-    draw_input({340, 280, 360, 44}, "TÃªn sÃ¡ch", field_c, sizeof(field_c));
-    draw_input({740, 280, 400, 44}, "TÃ¡c giáº£", field_d, sizeof(field_d));
-    draw_input({340, 365, 360, 44}, "Thá»ƒ loáº¡i", field_e, sizeof(field_e));
-    draw_input({740, 365, 400, 44}, "Sá»‘ lÆ°á»£ng (0 - 10000)", field_f, sizeof(field_f));
-    draw_input({340, 450, 360, 44}, "NÄƒm xuáº¥t báº£n", field_g, sizeof(field_g));
+    // --- PHáº¦N EDITING (Sá»¬A SÃCH) ---
+    draw_input({340, 185, 360, 44}, "MÃ£ sÃ¡ch cÅ©", field_a, sizeof(field_a));
+    draw_input({740, 185, 400, 44}, "MÃ£ sÃ¡ch má»›i", field_b, sizeof(field_b));
+    draw_input({340, 260, 360, 44}, "TÃªn sÃ¡ch", field_c, sizeof(field_c));
+    draw_input({740, 260, 400, 44}, "TÃ¡c giáº£", field_d, sizeof(field_d));
+    draw_input({340, 335, 360, 44}, "Thá»ƒ loáº¡i", field_e, sizeof(field_e));
+    draw_input({740, 335, 400, 44}, "Sá»‘ lÆ°á»£ng (0 - 10000)", field_f, sizeof(field_f));
+    
+    static char temp_year_field[96] = ""; 
+    draw_input({340, 410, 360, 44}, "NÄƒm xuáº¥t báº£n", temp_year_field, sizeof(temp_year_field));
+    draw_input({740, 410, 400, 44}, "Vá»‹ trÃ­ ká»‡ sÃ¡ch", field_g, sizeof(field_g));
 
-    if (draw_button({530, 545, 220, 48}, "Cáº­p nháº­t sÃ¡ch", ORANGE)) {
+    if (draw_button({530, 500, 220, 48}, "Cáº­p nháº­t sÃ¡ch", ORANGE)) {
         int quantity = 0;
         int year = 0;
         if (is_blank(field_a) || is_blank(field_b) || is_blank(field_c) ||
-            is_blank(field_d) || is_blank(field_e) ||
+            is_blank(field_d) || is_blank(field_e) || is_blank(field_g) ||
             !read_integer(field_f, quantity, 0, 10000) ||
-            !read_integer(field_g, year, 1000, 9999)) {
+            !read_integer(temp_year_field, year, 1000, 9999)) {
             set_message("Nháº­p Ä‘áº§y Ä‘á»§ thÃ´ng tin vÃ  sá»‘ há»£p lá»‡.", true);
         } else if (controller.get_book_by_id(field_a) == nullptr) {
             set_message("KhÃ´ng tÃ¬m tháº¥y mÃ£ sÃ¡ch cÅ©.", true);
@@ -1645,25 +1643,24 @@ void library_gui::draw_book_form(bool editing) {
             std::string title = field_c;
             std::string author = field_d;
             std::string category = field_e;
+            std::string shelf = field_g;
             ask_confirm("XÃ¡c nháº­n cáº­p nháº­t sÃ¡ch",
                         "Cáº­p nháº­t thÃ´ng tin sÃ¡ch " + old_id + "?\n"
-                        "MÃ£ sÃ¡ch má»›i: " + new_id + "\n"
-                        "TÃªn sÃ¡ch: " + title + "\n"
-                        "Sá»‘ lÆ°á»£ng: " + std::to_string(quantity),
+                        "MÃ£ sÃ¡ch má»›i: " + new_id,
                         "Cáº­p nháº­t", ORANGE,
-                        [this, old_id, new_id, title, author, category, quantity, year]() {
+                        [this, old_id, new_id, title, author, category, quantity, year, shelf]() {
                 book replacement(new_id, title, author, category, quantity, year);
                 if (controller.update_book_info(old_id, replacement)) {
                     set_message("ÄÃ£ cáº­p nháº­t thÃ´ng tin sÃ¡ch.");
                     clear_fields();
+                    temp_year_field[0] = '\0';
                 } else {
-                    set_message("Cáº­p nháº­t tháº¥t báº¡i: kiá»ƒm tra mÃ£ sÃ¡ch cÅ© vÃ  mÃ£ sÃ¡ch má»›i.", true);
+                    set_message("Cáº­p nháº­t tháº¥t báº¡i.", true);
                 }
             });
         }
     }
 }
-
 void library_gui::draw_book_delete() {
     DrawText("XÃ³a sÃ¡ch", CONTENT_X + 25, 120, 30, DARKBLUE);
     draw_back_button();
@@ -1697,7 +1694,6 @@ void library_gui::draw_book_delete() {
         });
     }
 }
-
 void library_gui::draw_borrows() {
     DrawText("Quáº£n lÃ½ phiáº¿u mÆ°á»£n", CONTENT_X + 25, 120, 30, DARKBLUE);
     draw_back_button();
@@ -4677,7 +4673,6 @@ void borrow_service::log_rejected_request(borrow b) {
 
 
 === FILE: .\Service\borrow_service.h ===
-
 #pragma once
 #include <string>
 #include <iostream>
@@ -4687,41 +4682,36 @@ void borrow_service::log_rejected_request(borrow b) {
 #include "file_helper.h"
 #include "../Structure/linked_list.h"
 #include "../Structure/hash_table.h"
-#include "book_service.h" // PhÃ¡Â»â€˜i hÃ¡Â»Â£p Ã„â€˜Ã¡Â»Æ’ trÃ¡Â»Â«/cÃ¡Â»â„¢ng sÃ¡Â»â€˜ lÃ†Â°Ã¡Â»Â£ng sÃƒÂ¡ch trong kho
-#include "user_service.h" // PhÃ¡Â»â€˜i hÃ¡Â»Â£p kiÃ¡Â»Æ’m tra ngÃ†Â°Ã¡Â»Âi dÃƒÂ¹ng
+#include "book_service.h" 
+#include "user_service.h" 
 
 class borrow_service {
 private:
     linked_list<borrow> borrow_list;
     hash_table<borrow> borrow_index;
     std::string data_file;
-
-    // HÃƒÂ m phÃ¡Â»Â¥ trÃ¡Â»Â£ tÃƒÂ¡ch chuÃ¡Â»â€”i vÃƒÂ  xÃ¡Â»Â­ lÃƒÂ½ Ã„â€˜Ã¡Â»â€¹nh dÃ¡ÂºÂ¡ng ngÃƒÂ y DD/MM/YYYY tÃ¡Â»Â« file txt
     void parse_line(std::string line, borrow& b);
 
 public:
     borrow_service(std::string filename = "borrow.txt");
     ~borrow_service();
 
-    // 1. NhÃƒÂ³m thao tÃƒÂ¡c File (I/O)
     bool load_data();
     bool save_data();
 
-    // 2. NghiÃ¡Â»â€¡p vÃ¡Â»Â¥ cÃ¡Â»â€˜t lÃƒÂµi: MÃ†Â°Ã¡Â»Â£n - TrÃ¡ÂºÂ£ sÃƒÂ¡ch
     bool create_borrow_ticket(std::string borrow_id, std::string book_id, std::string user_id, date borrow_date, date due_date, book_service& b_service, user_service& u_service);
     bool return_book(std::string borrow_id, book_service& b_service);
-    bool delete_borrow_ticket(std::string borrow_id); // XÃƒÂ³a phiÃ¡ÂºÂ¿u mÃ†Â°Ã¡Â»Â£n
+    bool delete_borrow_ticket(std::string borrow_id); 
 
-    // 3. NghiÃ¡Â»â€¡p vÃ¡Â»Â¥ kiÃ¡Â»Æ’m tra tÃ¡Â»Â± Ã„â€˜Ã¡Â»â„¢ng quÃƒÂ¡ hÃ¡ÂºÂ¡n (TÃ¡ÂºÂ­n dÃ¡Â»Â¥ng toÃƒÂ¡n tÃ¡Â»Â­ so sÃƒÂ¡nh ngÃƒÂ y thÃƒÂ¡ng)
+    // ÄÃƒ THÃŠM HÃ€M NÃ€Y VÃ€O ÄÃ‚Y:
+    void log_rejected_request(borrow b);
+
     void check_and_update_overdue(date current_date);
-
-    // 4. NhÃƒÂ³m Tra cÃ¡Â»Â©u & HiÃ¡Â»Æ’n thÃ¡Â»â€¹
     node<borrow>* get_borrow_by_id(std::string id);
     linked_list<borrow> get_borrows_by_user(std::string user_id, bool active_only);
     linked_list<borrow> filter_borrows_by_date(date start_date, date end_date);
     void display_all();
 
-    // 5. RÃƒÂ ng buÃ¡Â»â„¢c toÃƒÂ n vÃ¡ÂºÂ¹n dÃ¡Â»Â¯ liÃ¡Â»â€¡u
     bool is_book_borrowed(std::string book_id) const;
     bool has_active_borrows(std::string user_id) const;
     bool is_user_borrowing_book(std::string user_id, std::string book_id) const;
@@ -4730,7 +4720,6 @@ public:
     int count_active_borrows_by_user(std::string user_id) const;
     int count_borrows_by_book(std::string book_id) const;
 };
-
 
 
 
