@@ -183,34 +183,69 @@ bool library_controller::is_request_id_in_queue(std::string req_id) {
 
 // HÀM MỚI: Sinh mã REQ tự động
 std::string library_controller::generate_request_id() {
-    // Biến tĩnh (static) sẽ giữ giá trị trong suốt quá trình app chạy
-    static int counter = 1; 
-    
-    time_t now = time(0);
-    
-    // Ghép thời gian (giây) với bộ đếm (counter)
-    // Ví dụ: REQ1732549200_1, REQ1732549200_2
-    std::string unique_id = "REQ" + std::to_string(now) + "_" + std::to_string(counter);
-    
-    counter++; // Tăng bộ đếm cho lần bấm tiếp theo
-    
-    return unique_id;
+    int max_id = 0;
+
+    auto scan_file = [&max_id](const std::string& filename) {
+        std::ifstream file(filename);
+        std::string line;
+
+        while (std::getline(file, line)) {
+            if (line.empty()) continue;
+
+            std::stringstream ss(line);
+            std::string id;
+            std::getline(ss, id, ';');
+
+            if (id.size() <= 3 || id.compare(0, 3, "REQ") != 0)
+                continue;
+
+            std::string number = id.substr(3);
+            bool valid = true;
+
+            for (char c : number) {
+                if (c < '0' || c > '9') {
+                    valid = false;
+                    break;
+                }
+            }
+
+            if (!valid) continue;
+
+            int value = std::stoi(number);
+            if (value > max_id) max_id = value;
+        }
+    };
+
+    scan_file(request_file);
+    scan_file("Data/borrow.txt");
+
+    return "REQ" + std::to_string(max_id + 1);
 }
 
-bool library_controller::register_book_request(std::string req_id, std::string book_id, std::string user_id, date b_date, date due_date) {
+bool library_controller::register_book_request(
+    std::string book_id, std::string user_id,
+    date b_date, date due_date) {
+
     node<book>* b_node = b_service.get_book_by_id(book_id);
     if (b_node == nullptr) return false;
     if (b_node->get_data().get_quantity() <= 0) return false;
     if (due_date < b_date) return false;
-    if (br_service.get_borrow_by_id(req_id) != nullptr) return false;
-    if (is_request_id_in_queue(req_id)) return false;
-    if (br_service.is_user_borrowing_book(user_id, book_id)) return false;
-    if (br_service.has_overdue_borrows(user_id)) return false;
-    if (br_service.count_active_borrows_by_user(user_id) >= 7) return false; // Chặn mượn > 7 cuốn
 
+    if (br_service.is_user_borrowing_book(user_id, book_id))
+        return false;
+
+    if (br_service.has_overdue_borrows(user_id))
+        return false;
+
+    if (br_service.count_active_borrows_by_user(user_id) >= 7)
+        return false;
+
+    std::string req_id = generate_request_id();
     borrow ticket(req_id, book_id, user_id, b_date, due_date, "Cho duyet");
+
     book_request_queue.push(ticket);
     save_requests();
+
     return true;
 }
 

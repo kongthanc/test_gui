@@ -1455,20 +1455,17 @@ void library_gui::draw_user_request() {
     DrawText("Đăng ký mượn sách", CONTENT_X + 25, 120, 30, DARKBLUE);
     draw_back_button();
 
-    draw_input({340, 195, 360, 44}, "Mã yêu cầu / mã phiếu", field_a, sizeof(field_a));
-    draw_input({740, 195, 360, 44}, "Mã sách", field_b, sizeof(field_b));
-    draw_input({340, 280, 360, 44}, "Ngày mượn (DD/MM/YYYY)", field_c, sizeof(field_c));
-    draw_input({740, 280, 360, 44}, "Thời hạn: 7, 14 hoặc 30 ngày",
+    draw_input({340, 195, 360, 44}, "Mã sách", field_b, sizeof(field_b));
+    draw_input({740, 195, 360, 44}, "Ngày mượn (DD/MM/YYYY)", field_c, sizeof(field_c));
+    draw_input({340, 280, 360, 44}, "Thời hạn: 7, 14 hoặc 30 ngày",
                field_d, sizeof(field_d));
-
     if (!draw_button({530, 390, 210, 48}, "Gửi yêu cầu")) return;
 
     date borrow_date;
     int duration = 0;
-    if (is_blank(field_a) || is_blank(field_b) ||
-        !read_date(field_c, borrow_date) ||
-        !read_integer(field_d, duration, 1, 30) ||
-        (duration != 7 && duration != 14 && duration != 30)) {
+    if (is_blank(field_b) || !read_date(field_c, borrow_date) || !read_integer(field_d, duration, 1, 30) || 
+        (duration != 7 && duration != 14 && duration != 30))
+    {
         set_message("Kiểm tra thông tin, ngày và thời hạn mượn.", true);
         return;
     }
@@ -1484,7 +1481,6 @@ void library_gui::draw_user_request() {
                     "không thể đăng ký mượn sách.", true);
         return;
     }
-    std::string request_id = field_a;
     std::string book_id = field_b;
     node<book>* book_node = controller.get_book_by_id(book_id);
     if (book_node == nullptr) {
@@ -1501,14 +1497,12 @@ void library_gui::draw_user_request() {
                 "Ngày mượn: " + format_date(borrow_date) + "\n"
                 "Hạn trả: " + format_date(due_date),
                 "Gửi yêu cầu", BLUE,
-                [this, request_id, book_id, user_id, borrow_date, due_date]() {
-        if (controller.register_book_request(request_id, book_id, user_id,
-                                             borrow_date, due_date)) {
+                [this, book_id, user_id, borrow_date, due_date]() {
+        if (controller.register_book_request(book_id, user_id, borrow_date, due_date)) {
             set_message("Đã đưa yêu cầu vào hàng đợi.");
             clear_fields();
         } else {
-            set_message("Gửi yêu cầu thất bại. Kiểm tra mã yêu cầu, "
-                        "số lượng sách hoặc lịch sử mượn.", true);
+            set_message("Gửi yêu cầu thất bại. Kiểm tra thông tin mượn sách.", true);
         }
     });
 }

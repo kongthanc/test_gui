@@ -82,8 +82,8 @@ public:
     void check_system_overdue(); 
 
     // ================= 4. HÀNG ĐỢI ĐĂNG KÝ (QUEUE) =================
-    std::string generate_request_id(); 
-    bool register_book_request(std::string req_id, std::string book_id, std::string user_id, date b_date, date due_date);
+    std::string generate_request_id();
+    bool register_book_request(std::string book_id, std::string user_id, date b_date, date due_date);
     bool has_pending_requests() const;
     borrow peek_next_request() const;
     bool approve_next_request();
