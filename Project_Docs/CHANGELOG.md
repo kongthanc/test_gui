@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-11-07 - Đối chiếu source GitHub với ZIP và đồng bộ tài liệu
+
+- ZIP có HEAD `9e1474906b635f1f07cae4c2e04c3303b53ea7a2`; source mới nhất trên `main` là `bd3e598b91fed16b0ee8d517ac6f9a29134a8230`, gồm 2 commit source sau ZIP.
+- Sau commit source đó, GitHub có 4 commit chỉ cập nhật `Project_Docs/`; các commit này không thêm chức năng ứng dụng.
+- Xác nhận các thay đổi source: kéo dài phần header/sidebar/panel để lấp vùng trống; xử lý ngày nhập không hợp lệ bằng ngày dự phòng và kiểm tra lại trong `library_gui::read_date()`.
+- Chưa build/chạy GUI hoặc kiểm thử runtime. Vì vậy layout và xử lý ngày chỉ được ghi nhận là đã chỉnh source, chưa xác nhận hoàn thành.
+- Các mục tra cứu người dùng kèm sách đang mượn, thông báo lỗi trùng rõ nguyên nhân và nhập Telex `thawngs` vẫn còn thiếu.
+- Kiến trúc tổng thể không thay đổi; `PROJECT_OVERVIEW.md` chỉ cập nhật mốc đối chiếu, không mô tả kiến trúc mới.
+
 ## 2026-11-07 - Đối chiếu GitHub sau snapshot ZIP
 
 - ZIP `PBL2_GUI_test.zip` có Git HEAD `9e1474906b635f1f07cae4c2e04c3303b53ea7a2`; GitHub `main` hiện ở `bd3e598b91fed16b0ee8d517ac6f9a29134a8230` (`full manf hinh`), đi trước 2 commit.
