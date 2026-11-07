@@ -1,7 +1,7 @@
 # PBL2 - Hệ thống quản lý thư viện
 
-> Tài liệu được đối chiếu với mã nguồn trong `PBL2_GUI_test(8).zip`, ngày 06/11/2026.
-> Đây là mô tả trạng thái của bản ZIP, không phải xác nhận rằng mọi chức năng đã được kiểm thử hoàn chỉnh.
+> Đối chiếu ngày 07/11/2026: ZIP người dùng gửi có Git HEAD `9e14749`; nhánh GitHub `main` hiện ở `bd3e598` (`full manf hinh`).
+> Kiến trúc tổng thể không thay đổi so với ZIP. Các chỉnh sửa sau ZIP được ghi nhận riêng trong `PROGRESS.md` và `CHANGELOG.md`; chưa coi là đã kiểm thử nếu chưa có kết quả chạy thực tế.
 
 ## 1. Mục tiêu và phạm vi
 
@@ -153,6 +153,7 @@ library_controller
 
 - Tạo phiếu mượn trực tiếp ở phía quản trị.
 - Đăng ký yêu cầu mượn từ tài khoản độc giả.
+- Controller chặn cùng một độc giả gửi nhiều yêu cầu `Cho duyet` cho cùng một đầu sách; GUI hiện vẫn trả thông báo thất bại chung khi đăng ký không thành công.
 - Duyệt yêu cầu để tạo phiếu mượn.
 - Từ chối yêu cầu và ghi vào dữ liệu phiếu mượn với trạng thái từ chối.
 - Trả sách, cập nhật trạng thái và hoàn lại số lượng sách trong kho.
@@ -226,11 +227,11 @@ Lưu ý:
 
 ## 7. Backlog ưu tiên tiếp theo
 
-1. Tra cứu người dùng và hiển thị các sách người đó đang mượn kèm trạng thái `Dang muon`/`Qua han`.
-2. Làm rõ thông báo khi đăng ký mượn trùng.
-3. Chỉnh layout để nội dung ôm trọn khung cửa sổ và co giãn hợp lý.
-4. Chặn crash khi nhập ngày/tháng/năm không hợp lệ trong màn hình đăng ký mượn.
-5. Tinh chỉnh bộ nhập đăng nhập để không nhận Unicode có dấu nhưng vẫn hiển thị đầy đủ chuỗi Telex ASCII, ví dụ `thawngs`.
+1. **Tra cứu người dùng kèm sách đang mượn:** màn hình hiện chỉ tra cứu ID và hiển thị tên/vai trò; chưa hiển thị danh sách sách và trạng thái từng phiếu.
+2. **Thông báo đăng ký trùng:** Controller đã chặn yêu cầu trùng, nhưng GUI vẫn hiện thông báo thất bại chung, chưa nêu rõ nguyên nhân.
+3. **Layout toàn cửa sổ:** source mới đã mở rộng phần header, sidebar và khung nội dung theo vùng trống do `ui_layout`; cần build/chạy ở nhiều kích thước cửa sổ để xác minh, đặc biệt cả màn hình đăng nhập.
+4. **Ngày không hợp lệ:** `Model/date.cpp` đã đổi sang ngày dự phòng khi constructor nhận ngày sai; `library_gui::read_date()` so sánh lại giá trị để từ chối input không hợp lệ. Chưa có kiểm thử runtime; cần cân nhắc tránh việc constructor âm thầm thay ngày sai bằng ngày mặc định ở các luồng khác.
+5. **Telex ở đăng nhập:** `GUI/login.cpp` vẫn chỉ nhận codepoint ASCII (32-126); chưa có thay đổi chứng minh chuỗi Telex như `thawngs` được giữ nguyên khi IME đang hoạt động.
 
 ## 8. Quy ước phát triển
 
