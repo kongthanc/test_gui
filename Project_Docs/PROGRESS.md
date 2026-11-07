@@ -1,6 +1,6 @@
 # Tiến độ dự án PBL2
 
-> Đối chiếu ngày 07/11/2026: ZIP HEAD `9e14749`; GitHub `main` HEAD `bd3e598`.
+> Đối chiếu ngày 07/11/2026: ZIP HEAD `9e14749`; source mới nhất trên GitHub `main` là `bd3e598`. Các commit sau đó chỉ cập nhật tài liệu.
 > `[x]` = đã được xác nhận/kiểm thử phù hợp; `[~]` = đã có chỉnh sửa source nhưng chưa xác minh runtime; `[ ]` = còn thiếu.
 
 ## 1. Trạng thái tổng quan
@@ -8,7 +8,7 @@
 - Ứng dụng GUI Raylib đã có luồng đăng nhập, sidebar theo vai trò và nhiều màn hình nghiệp vụ.
 - Các tầng Model, Service, Controller, cấu trúc dữ liệu và thuật toán đã được tổ chức riêng.
 - Dữ liệu được lưu bằng các tệp trong `Data/`.
-- Chưa có bằng chứng trong ZIP về một bộ kiểm thử tự động hoặc biên bản kiểm thử toàn hệ thống.
+- Chưa có bằng chứng trong ZIP về một bộ kiểm thử tự động hoặc biên bản kiểm thử toàn hệ thống. Lần đối chiếu GitHub này cũng không chạy build hoặc GUI.
 
 ## 2. Chức năng đã có mã nguồn
 
@@ -109,7 +109,7 @@ Người dùng đã xác nhận các chức năng sau hoạt động ổn:
 - Danh sách yêu cầu đang chờ duyệt hiển thị ngay trong mục `Đăng ký mượn sách`.
 
 Đối chiếu GitHub mới nhất:
-- ZIP được gửi có HEAD `9e14749`; GitHub `main` hiện ở `bd3e598`, đi trước 2 commit.
+- ZIP được gửi có HEAD `9e14749`; source trên GitHub `main` ở `bd3e598`, đi trước 2 commit source. Bốn commit tiếp theo chỉ cập nhật tài liệu.
 - Đã có thay đổi source cho layout và xử lý ngày không hợp lệ, nhưng chưa có kết quả build/chạy GUI nên chỉ ghi nhận là đã chỉnh source, chưa xác minh.
 - Tra cứu người dùng hiện mới hiển thị thông tin tài khoản, chưa liệt kê sách đang mượn.
 - Thông báo lỗi đăng ký trùng vẫn là thông báo chung.
