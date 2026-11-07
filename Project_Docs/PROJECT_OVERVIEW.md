@@ -1,7 +1,7 @@
 # PBL2 - Hệ thống quản lý thư viện
 
-> Đối chiếu ngày 07/11/2026: ZIP người dùng gửi có Git HEAD `9e14749`; nhánh GitHub `main` hiện ở `bd3e598` (`full manf hinh`).
-> Kiến trúc tổng thể không thay đổi so với ZIP. Các chỉnh sửa sau ZIP được ghi nhận riêng trong `PROGRESS.md` và `CHANGELOG.md`; chưa coi là đã kiểm thử nếu chưa có kết quả chạy thực tế.
+> Đối chiếu ngày 07/11/2026: ZIP người dùng gửi có Git HEAD `9e14749`; source mới nhất trên `main` ở `bd3e598` (`full manf hinh`). Sau commit source này, nhánh có các commit chỉ cập nhật tài liệu.
+> Kiến trúc tổng thể không thay đổi so với ZIP. Các chỉnh sửa source sau ZIP được ghi nhận riêng trong `PROGRESS.md` và `CHANGELOG.md`; chưa coi là đã kiểm thử nếu chưa có kết quả chạy thực tế.
 
 ## 1. Mục tiêu và phạm vi
 
