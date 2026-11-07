@@ -1,7 +1,7 @@
 # Tiến độ dự án PBL2
 
-> Snapshot đối chiếu: `PBL2_GUI_test(8).zip`, ngày 06/11/2026.
-> Trạng thái bên dưới phân biệt rõ: có mã nguồn, đã kiểm thử, và còn thiếu. Có mã nguồn không đồng nghĩa đã kiểm thử hoàn chỉnh.
+> Đối chiếu ngày 07/11/2026: ZIP HEAD `9e14749`; GitHub `main` HEAD `bd3e598`.
+> `[x]` = đã được xác nhận/kiểm thử phù hợp; `[~]` = đã có chỉnh sửa source nhưng chưa xác minh runtime; `[ ]` = còn thiếu.
 
 ## 1. Trạng thái tổng quan
 
@@ -26,6 +26,7 @@
 
 ### Mượn/trả
 - [x] Đăng ký yêu cầu mượn từ độc giả.
+- [x] Chặn cùng một độc giả gửi nhiều yêu cầu đang chờ cho cùng một đầu sách (người dùng đã xác nhận hoạt động ổn).
 - [x] Duyệt yêu cầu và tạo phiếu mượn.
 - [x] Từ chối yêu cầu, lưu trạng thái `Tu choi`.
 - [x] Trả sách và hoàn kho.
@@ -58,11 +59,11 @@
 
 ## 3. Chưa hoàn thiện hoặc cần xác minh
 
-- [ ] **P1:** Tra cứu người dùng, hiển thị sách người đó đang mượn kèm trạng thái từng phiếu (`Dang muon`, `Qua han`).
-- [ ] **P1:** Đổi thông báo khi đăng ký mượn trùng để nêu rõ nguyên nhân, thay vì báo thất bại chung chung.
-- [ ] **P1:** Chỉnh giao diện để nội dung ôm trọn khung cửa sổ, co giãn hợp lý theo kích thước màn hình.
-- [ ] **P1:** Sửa lỗi nhập ngày/tháng/năm không hợp lệ trong `Đăng ký mượn sách` khiến chương trình bị văng; cần báo lỗi thay vì crash.
-- [ ] **P2:** Tinh chỉnh đăng nhập: bỏ qua ký tự Unicode có dấu nhưng giữ nguyên chuỗi Telex ASCII, ví dụ `thawngs` phải hiển thị nguyên `thawngs`.
+- [ ] **P1:** Tra cứu người dùng và hiển thị sách người đó đang mượn kèm trạng thái từng phiếu (`Dang muon`, `Qua han`). Hiện `draw_users()` chỉ hiển thị ID, tên và vai trò.
+- [ ] **P1:** Đổi thông báo khi đăng ký mượn trùng để nêu rõ nguyên nhân. Logic chặn trùng đã có, nhưng GUI vẫn báo chung: `Gửi yêu cầu thất bại. Kiểm tra thông tin mượn sách.`
+- [~] **P1:** Layout: `GUI/library_gui.cpp` và `GUI/ui_layout.h` đã được chỉnh để kéo header/sidebar/khung nội dung lấp vùng trống. Chưa build/chạy để xác nhận ở nhiều tỷ lệ cửa sổ; chưa xác minh toàn bộ màn hình đăng nhập.
+- [~] **P1:** Ngày không hợp lệ: `Model/date.cpp` đã thay ngày sai bằng ngày dự phòng; `library_gui::read_date()` kiểm tra lại và trả `false` khi giá trị không khớp. Chưa chạy test ngày 31/02, tháng 13, năm 0, ngày nhuận; constructor hiện có thể âm thầm thay ngày sai ở luồng khác.
+- [ ] **P2:** Tinh chỉnh đăng nhập để chuỗi Telex ASCII như `thawngs` luôn được giữ nguyên trong lúc gõ, đồng thời không nhận Unicode có dấu. `GUI/login.cpp` hiện vẫn lọc codepoint ngoài ASCII, chưa chứng minh đáp ứng hành vi Telex yêu cầu.
 - [ ] Kiểm thử toàn bộ luồng trên GUI với cả ba vai trò.
 - [ ] Kiểm thử biên cho đăng ký, duyệt, từ chối, trả sách, quá hạn và xóa dữ liệu.
 - [ ] Xử lý trường hợp yêu cầu đầu hàng đợi không thể duyệt; cần quy tắc rõ ràng để tránh yêu cầu lỗi chặn FIFO.
@@ -75,10 +76,10 @@
 
 ## 4. Vấn đề kỹ thuật đã xác định từ mã nguồn
 
-### P1. Cho phép đăng ký yêu cầu trùng
-Vị trí: `Controller/library_controller.cpp`, hàm `register_book_request()`.
+### P1. Thông báo khi đăng ký trùng chưa đủ rõ
+Vị trí: `Controller/library_controller.cpp`, hàm `register_book_request()`; `GUI/library_gui.cpp`, hàm `draw_user_request()`.
 
-Hiện tại hàm kiểm tra sách tồn tại, số lượng, ngày, đang mượn trùng, quá hạn và giới hạn 7 phiếu đang mượn. Chưa thấy bước kiểm tra hàng đợi có yêu cầu `Cho duyet` cùng `user_id` và `book_id`.
+Controller đã duyệt hàng đợi và chặn cùng `user_id` + `book_id` khi yêu cầu trước vẫn ở trạng thái `Cho duyet`. Tuy nhiên hàm chỉ trả về `false`; GUI gộp nhiều nguyên nhân thất bại thành một thông báo chung. Cần trả mã/kết quả nghiệp vụ cụ thể để GUI nói đúng lý do.
 
 ### P1. Yêu cầu lỗi có thể chặn FIFO
 Vị trí: `Controller/library_controller.cpp`, hàm `approve_next_request()`.
@@ -107,16 +108,20 @@ Người dùng đã xác nhận các chức năng sau hoạt động ổn:
 - Không nhận ký tự tiếng Việt có dấu trong ô đăng nhập.
 - Danh sách yêu cầu đang chờ duyệt hiển thị ngay trong mục `Đăng ký mượn sách`.
 
-**Nhiệm vụ tiếp theo: tra cứu người dùng và sách đang mượn.** Khi chọn/tra cứu một người dùng, giao diện cần hiển thị các sách người đó đang mượn cùng trạng thái hiện tại của từng phiếu. Đây là ưu tiên số 1.
+Đối chiếu GitHub mới nhất:
+- ZIP được gửi có HEAD `9e14749`; GitHub `main` hiện ở `bd3e598`, đi trước 2 commit.
+- Đã có thay đổi source cho layout và xử lý ngày không hợp lệ, nhưng chưa có kết quả build/chạy GUI nên chỉ ghi nhận là đã chỉnh source, chưa xác minh.
+- Tra cứu người dùng hiện mới hiển thị thông tin tài khoản, chưa liệt kê sách đang mượn.
+- Thông báo lỗi đăng ký trùng vẫn là thông báo chung.
+- Bộ nhập đăng nhập vẫn lọc codepoint ngoài ASCII; yêu cầu giữ nguyên chuỗi Telex ASCII chưa được xác minh/đáp ứng.
 
-Các nhiệm vụ tiếp theo theo thứ tự: thông báo khi đăng ký trùng; layout ôm trọn cửa sổ; xử lý ngày sai không crash; tinh chỉnh nhập Telex ở màn hình đăng nhập.
-
+**Nhiệm vụ ưu tiên tiếp theo: tra cứu người dùng và sách đang mượn.** Khi tra cứu một người dùng, giao diện cần hiển thị từng sách người đó đang mượn cùng trạng thái hiện tại (`Dang muon`/`Qua han`).
 ## 6. Thứ tự ưu tiên thực hiện
 
 1. **Tra cứu người dùng và sách đang mượn:** hiển thị sách cùng trạng thái `Dang muon`/`Qua han` theo người dùng được chọn.
 2. **Thông báo đăng ký trùng:** đổi nội dung phản hồi để nêu rõ yêu cầu/sách đã tồn tại và lý do không thể gửi thêm.
-3. **Bố cục giao diện:** để nội dung ôm trọn khung cửa sổ, co giãn theo kích thước cửa sổ.
-4. **Ngày không hợp lệ:** ngăn crash khi nhập ngày/tháng/năm sai trong `Đăng ký mượn sách`, hiển thị cảnh báo thân thiện.
+3. **Bố cục giao diện:** đã có chỉnh sửa source để kéo dài header/sidebar/khung nội dung; cần build và kiểm tra nhiều kích thước cửa sổ.
+4. **Ngày không hợp lệ:** đã có chỉnh sửa ở `Model/date.cpp` và `library_gui::read_date()`; cần test biên và rà soát việc constructor tự thay ngày sai bằng ngày mặc định.
 5. **Nhập Telex ở đăng nhập:** giữ nguyên chuỗi ASCII đang gõ như `thawngs`, đồng thời không nhận ký tự Unicode có dấu.
 6. Kiểm thử toàn bộ luồng, xử lý lỗi dữ liệu/file và rà soát quyền.
 7. Hoàn thiện Undo, nhất quán dữ liệu và bảo mật mật khẩu.
