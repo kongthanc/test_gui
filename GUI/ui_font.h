@@ -5,8 +5,8 @@
 // Khai bao font dung chung cho cac tep GUI.
 extern Font app_font;
 
-// Chinh he so nay (vi du 1.05f hoac 1.1f) neu muon phong to toan bo chu them nua
-const float FONT_SCALE = 1.0f;
+// He so phong to font chung cho toan bo ung dung.
+const float FONT_SCALE = 1.10f;
 
 inline void DrawReadableText(const char* text, int x, int y,
                              int font_size, Color color) {

@@ -171,8 +171,21 @@ linked_list<borrow> borrow_service::get_borrows_by_user(std::string user_id, boo
         if (b.get_user_id() == user_id) {
             // active_only = true: chá»‰ láº¥y phiáº¿u chÆ°a tráº£ (Dang muon hoáº·c Qua han)
             // active_only = false: láº¥y toÃ n bá»™ phiáº¿u cá»§a User, ká»ƒ cáº£ Ä‘Ã£ tráº£
-            if (!active_only || b.get_status() != "Da tra") {
-                result.push_back(b);
+            if (active_only)
+            {
+                if (b.get_status() == "Dang muon" ||
+                    b.get_status() == "Qua han")
+                {
+                    result.push_back(b);
+                }
+            }
+            else
+            {
+                if (b.get_status() == "Da tra" ||
+                    b.get_status() == "Tu choi")
+                {
+                    result.push_back(b);
+                }
             }
         }
         curr = curr->get_next();
@@ -205,6 +218,10 @@ bool borrow_service::delete_borrow_ticket(std::string borrow_id) {
     node<borrow>* target = borrow_index.find(borrow_id);
     if (target == nullptr) {
         return false; // KhÃ´ng tÃ¬m tháº¥y mÃ£ phiáº¿u
+    }
+
+    if (borrow_id.rfind("REQ", 0) == 0) {
+        return false;
     }
 
     // CHá»ˆ CHO PHÃ‰P XÃ“A KHI ÄÃƒ TRáº¢ SÃCH XONG! ("Da tra")
@@ -250,12 +267,16 @@ bool borrow_service::has_active_borrows(std::string user_id) const {
     return false;
 }
 
-bool borrow_service::is_user_borrowing_book(std::string user_id, std::string book_id) const {
+bool borrow_service::is_user_borrowing_book(
+    std::string user_id, std::string book_id) const {
     node<borrow>* curr = borrow_list.get_head();
     while (curr != nullptr) {
         borrow b = curr->get_data();
-        if (b.get_user_id() == user_id && b.get_book_id() == book_id && b.get_status() != "Da tra") {
-            return true; // Äang mÆ°á»£n cuá»‘n nÃ y rá»“i
+        if (b.get_user_id() == user_id &&
+            b.get_book_id() == book_id &&
+            b.get_status() != "Da tra" &&
+            b.get_status() != "Tu choi") {
+            return true;
         }
         curr = curr->get_next();
     }

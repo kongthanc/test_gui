@@ -17,7 +17,7 @@ private:
         SALARY,
         USERS, USER_ADD, USER_EDIT, USER_DELETE,
         SHELF,
-        USER_SEARCH, USER_REQUEST, USER_ACTIVE_BORROWS, USER_HISTORY
+        USER_SEARCH, USER_REQUEST, USER_ACTIVE_BORROWS, USER_HISTORY, USER_NOTIFICATIONS
     };
 
     library_controller& controller;
@@ -41,17 +41,27 @@ private:
     std::string message;
     bool message_is_error;
     bool showing_related;
+    bool showing_pending_requests;
     std::string selected_book_id;
 
-    // Hop thoai xac nhan.
+    // Hộp thoại xác nhận.
     bool confirm_open;
     bool confirm_just_opened;
     bool input_locked;
+    bool confirm_input_enabled;
     std::string confirm_title;
     std::string confirm_text;
     std::string confirm_ok_label;
     Color confirm_ok_color;
     std::function<void()> confirm_action;
+    std::string confirm_error;
+
+    // Luu thong tin thong bao dang duoc xem chi tiet.
+    bool notification_detail_open = false;
+    std::string notification_detail_title;
+    std::string notification_detail_content;
+    std::string notification_detail_time;
+    float notification_detail_scroll = 0;
 
     void collect_text_input();
     void clear_fields();
@@ -62,8 +72,11 @@ private:
     void set_message(const std::string& text, bool is_error = false);
 
     void ask_confirm(const std::string& title, const std::string& text,
-                     const std::string& ok_label, Color ok_color,
-                     std::function<void()> action);
+                    const std::string& ok_label, Color ok_color,
+                    std::function<void()> action);
+    void ask_confirm_input(const std::string& title, const std::string& text,
+                    const std::string& ok_label, Color ok_color,
+                    std::function<void()> action);
     void draw_confirm_dialog();
 
     void draw_shell(const std::string& role);
@@ -95,6 +108,7 @@ private:
 
     void draw_user_request();
     void draw_my_borrows(bool active_only);
+    void draw_notifications();
 
     bool read_integer(const char* text, int& value, int min_value, int max_value) const;
     bool read_date(const char* text, date& value) const;

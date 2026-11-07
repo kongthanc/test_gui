@@ -12,6 +12,7 @@
 #include "../Structure/stack.h" 
 #include "../Structure/graph.h"
 #include "../Algorithm/graph_algo.h"
+#include "../Service/notification_service.h"
 
 class library_controller {
 private:
@@ -28,6 +29,7 @@ private:
     user_service u_service;
     borrow_service br_service;
     shift_service s_service;
+    notification_service n_service;
     
     queue<borrow> book_request_queue;
     std::string request_file;
@@ -82,13 +84,14 @@ public:
     void check_system_overdue(); 
 
     // ================= 4. HÀNG ĐỢI ĐĂNG KÝ (QUEUE) =================
-    std::string generate_request_id(); 
-    bool register_book_request(std::string req_id, std::string book_id, std::string user_id, date b_date, date due_date);
+    std::string generate_request_id();
+    bool register_book_request(std::string book_id, std::string user_id, date b_date, date due_date);
     bool has_pending_requests() const;
     borrow peek_next_request() const;
     bool approve_next_request();
-    bool reject_next_request();
+    bool reject_next_request(std::string reason = "");
     int get_pending_request_count() const;
+    linked_list<borrow> get_my_pending_requests(std::string user_id);
     bool is_request_id_in_queue(std::string req_id);
 
     // ================= 5. NGHIỆP VỤ CA TRỰC (SHIFT) =================
@@ -122,4 +125,9 @@ public:
 
     bool has_overdue_borrows(std::string user_id) const;
     bool has_active_borrows(std::string user_id) const;
+
+    // ================= 9. THÔNG BÁO =================
+    std::vector<notification> get_my_notifications(std::string user_id) const;
+    int get_unread_notification_count(std::string user_id) const;
+    bool mark_notification_read(std::string notification_id);
 };

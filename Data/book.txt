@@ -1,5 +1,5 @@
-B001;Lập trình C++ cơ bản;Nguyễn Thanh Thủy;IT;9;2020
-B002;Cấu trúc dữ liệu và Giải thuật;Lê Minh Hoàng;IT;6;2015
+B001;Lập trình C++ cơ bản;Nguyễn Thanh Thủy;IT;8;2020
+B002;Cấu trúc dữ liệu và Giải thuật;Lê Minh Hoàng;IT;5;2015
 B003;Đắc Nhân Tâm;Dale Carnegie;Kỹ năng;15;2021
 B004;Clean Code;Robert C. Martin;IT;6;2008
 B005;Nhà Giả Kim;Paulo Coelho;Tiểu thuyết;12;1988
@@ -8,7 +8,7 @@ B007;Design Patterns;Gang of Four;IT;3;2012
 B008;Introduction to Algorithms;Thomas H. Cormen;IT;4;2009
 B009;The Pragmatic Programmer;Andrew Hunt;IT;3;1999
 B010;Python Crash Course;Eric Matthes;IT;6;2015
-B011;Code Complete;Steve McConnell;IT;2;2004
+B011;Code Complete;Steve McConnell;IT;1;2004
 B012;Computer Networking: A Top-Down Approach;James F. Kurose;IT;3;2016
 B013;Artificial Intelligence: A Modern Approach;Stuart Russell;IT;2;2020
 B014;Atomic Habits;James Clear;Kỹ năng;9;2018
