@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-11-07 - Đối chiếu GitHub sau snapshot ZIP
+
+- ZIP `PBL2_GUI_test.zip` có Git HEAD `9e1474906b635f1f07cae4c2e04c3303b53ea7a2`; GitHub `main` hiện ở `bd3e598b91fed16b0ee8d517ac6f9a29134a8230` (`full manf hinh`), đi trước 2 commit.
+- So sánh hai mốc cho thấy khác biệt ròng ở `Data/borrow.txt`, `Data/request.txt`, `GUI/library_gui.cpp`, `GUI/ui_layout.h` và `Model/date.cpp`. Dữ liệu mẫu yêu cầu/phiếu mượn cũng đã thay đổi; không xem thay đổi dữ liệu mẫu là chức năng nghiệp vụ mới.
+- Layout: `GUI/library_gui.cpp` kéo dài header, sidebar và panel theo phần không gian thừa; `GUI/ui_layout.h` tiếp tục dùng tỷ lệ scale và offset để giữ tỷ lệ bản vẽ. Đã có chỉnh sửa source, chưa build/chạy GUI để xác minh kết quả ở các kích thước cửa sổ.
+- Ngày: `Model/date.cpp` đổi constructor để gán ngày dự phòng `1/1/2026` khi đầu vào không hợp lệ; `library_gui::read_date()` so sánh lại ngày/tháng/năm và trả `false` nếu constructor đã thay giá trị. Chưa chạy test runtime; cần chú ý constructor có thể che giấu dữ liệu ngày sai ở các luồng khác.
+- Tra cứu người dùng: `draw_users()` vẫn chỉ hiển thị ID, tên và vai trò; chưa có danh sách sách đang mượn kèm trạng thái.
+- Đăng ký trùng: Controller đã chặn yêu cầu đang chờ trùng theo người dùng và sách, nhưng GUI vẫn báo thất bại chung, chưa nêu đúng nguyên nhân.
+- Đăng nhập: `GUI/login.cpp` vẫn chỉ nhận codepoint ASCII 32-126; chưa có thay đổi đáp ứng/kiểm chứng yêu cầu giữ nguyên chuỗi Telex ASCII `thawngs`.
+- Không có thay đổi kiến trúc tổng thể. Lần đối chiếu này không chạy build hoặc test GUI; không đánh dấu các chỉnh sửa mới là đã kiểm thử.
+
 ## 2026-11-07 - Xác nhận chức năng và cập nhật backlog
 
 - Người dùng xác nhận chức năng chặn yêu cầu mượn trùng và lọc ký tự tiếng Việt có dấu ở đăng nhập hoạt động ổn.
