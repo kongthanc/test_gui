@@ -5,10 +5,12 @@
 ## 1. Bản nguồn
 
 - Dự án: `PBL2_GUI_test`.
-- Snapshot đã rà soát: `PBL2_GUI_test(8).zip`.
-- Ngày snapshot: 06/11/2026.
-- Git HEAD trong ZIP: `5679f10` (`Nút thông báo + Lí do từ chối duyệt`).
-- Trạng thái Git trong ZIP: branch `main` đang ở `origin/main`, nhưng working tree có nhiều file sửa đổi và `Project_Docs/` chưa được Git theo dõi tại snapshot. Không reset/checkout hoặc ghi đè các thay đổi này.
+- Snapshot người dùng vừa gửi: `PBL2_GUI_test.zip`.
+- Git HEAD bên trong ZIP: `9e1474906b635f1f07cae4c2e04c3303b53ea7a2` (`Chống đăng ký trùng sách + Login no Vietnamese`).
+- GitHub repository: [`kongthanc/test_gui`](https://github.com/kongthanc/test_gui).
+- Nhánh mặc định: `main`; HEAD mới nhất tại lần đối chiếu ngày 07/11/2026: `bd3e598b91fed16b0ee8d517ac6f9a29134a8230` (`full manf hinh`).
+- GitHub đi trước ZIP 2 commit. So sánh ghi nhận thay đổi ròng ở `Data/borrow.txt`, `Data/request.txt`, `GUI/library_gui.cpp`, `GUI/ui_layout.h`, `Model/date.cpp`.
+- Không suy đoán trạng thái working tree local từ snapshot; không reset/checkout hoặc ghi đè thay đổi local chưa commit.
 
 ## 2. Quy tắc khi hỗ trợ code
 
@@ -51,14 +53,19 @@ Người dùng đã xác nhận các chức năng sau hoạt động ổn:
 - Không nhận ký tự tiếng Việt có dấu trong ô đăng nhập.
 - Danh sách yêu cầu đang chờ duyệt hiển thị trong mục `Đăng ký mượn sách`.
 
-Các việc cần làm tiếp theo, theo đúng thứ tự ưu tiên:
-1. Tra cứu người dùng và hiển thị sách người đó đang mượn kèm trạng thái từng phiếu (`Dang muon`, `Qua han`).
-2. Đổi nội dung thông báo khi đăng ký mượn trùng để nêu rõ nguyên nhân.
-3. Chỉnh giao diện ôm trọn khung cửa sổ và co giãn hợp lý.
-4. Sửa lỗi nhập ngày/tháng/năm sai trong `Đăng ký mượn sách` khiến chương trình bị văng.
-5. Tinh chỉnh đăng nhập: bỏ qua ký tự Unicode có dấu nhưng vẫn giữ nguyên chuỗi Telex ASCII. Ví dụ gõ `thawngs` phải hiển thị `thawngs`, không mất ký tự giữa chừng.
+Kết quả rà soát GitHub mới nhất:
+- **Tra cứu người dùng:** hiện chỉ tra cứu ID và hiển thị tên/vai trò; chưa hiển thị sách đang mượn và trạng thái từng phiếu.
+- **Thông báo đăng ký trùng:** Controller đã chặn yêu cầu trùng, nhưng GUI vẫn báo lỗi chung. Cần tách nguyên nhân nghiệp vụ để hiển thị đúng.
+- **Layout:** đã có chỉnh sửa source trong `GUI/library_gui.cpp` và `GUI/ui_layout.h` để kéo dài header/sidebar/panel. Chưa build/chạy xác minh, đặc biệt cần kiểm tra màn hình đăng nhập và nhiều tỷ lệ cửa sổ.
+- **Ngày sai:** `Model/date.cpp` đã gán ngày dự phòng khi constructor nhận ngày không hợp lệ; `library_gui::read_date()` phát hiện giá trị bị thay và trả lỗi. Chưa test runtime; xem xét tránh âm thầm thay ngày ở các luồng khác.
+- **Telex đăng nhập:** `GUI/login.cpp` vẫn lọc codepoint ngoài ASCII; chưa đáp ứng/kiểm chứng yêu cầu gõ `thawngs` phải giữ nguyên từng ký tự ASCII.
 
-Lưu ý: yêu cầu đăng nhập là không nhận chữ có dấu, không phải chặn các phím Telex ASCII như `a`, `w`, `s`; các ký tự ASCII phải được giữ nguyên trong ô nhập.
+Thứ tự công việc tiếp theo:
+1. Tra cứu người dùng và hiển thị các sách người đó đang mượn cùng trạng thái `Dang muon`/`Qua han`.
+2. Hiển thị đúng nguyên nhân khi đăng ký mượn trùng.
+3. Build/chạy và hoàn thiện layout toàn cửa sổ.
+4. Kiểm thử ngày sai, ngày nhuận và rà soát cách xử lý ngày dự phòng.
+5. Sửa bộ nhập đăng nhập để giữ nguyên chuỗi Telex ASCII, không nhận Unicode có dấu.
 
 Các việc kỹ thuật dài hạn vẫn còn: xử lý yêu cầu lỗi ở đầu FIFO, kiểm tra nhất quán dữ liệu, Undo người dùng/phiếu mượn, rà soát quyền và bảo mật mật khẩu.
 
