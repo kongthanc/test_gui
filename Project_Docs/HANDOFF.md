@@ -8,7 +8,7 @@
 - Snapshot người dùng vừa gửi: `PBL2_GUI_test.zip`.
 - Git HEAD bên trong ZIP: `9e1474906b635f1f07cae4c2e04c3303b53ea7a2` (`Chống đăng ký trùng sách + Login no Vietnamese`).
 - GitHub repository: [`kongthanc/test_gui`](https://github.com/kongthanc/test_gui).
-- Nhánh mặc định: `main`; source mới nhất tại lần đối chiếu ngày 07/11/2026: `bd3e598b91fed16b0ee8d517ac6f9a29134a8230` (`full manf hinh`). Sau commit này có 4 commit chỉ cập nhật tài liệu.
+- Nhánh mặc định: `main`; source mới nhất tại lần đối chiếu ngày 07/11/2026: `bd3e598b91fed16b0ee8d517ac6f9a29134a8230` (`full manf hinh`). Các commit tiếp theo trên nhánh chỉ cập nhật `Project_Docs/`, không làm thay đổi mã nguồn ứng dụng.
 - So với ZIP HEAD `9e1474906b635f1f07cae4c2e04c3303b53ea7a2`, GitHub có 2 commit source mới. Thay đổi ròng nằm ở `Data/borrow.txt`, `Data/request.txt`, `GUI/library_gui.cpp`, `GUI/ui_layout.h`, `Model/date.cpp`; dữ liệu mẫu cũng thay đổi.
 - Không suy đoán trạng thái working tree local từ snapshot; không reset/checkout hoặc ghi đè thay đổi local chưa commit.
 
