@@ -8,8 +8,8 @@
 - Snapshot người dùng vừa gửi: `PBL2_GUI_test.zip`.
 - Git HEAD bên trong ZIP: `9e1474906b635f1f07cae4c2e04c3303b53ea7a2` (`Chống đăng ký trùng sách + Login no Vietnamese`).
 - GitHub repository: [`kongthanc/test_gui`](https://github.com/kongthanc/test_gui).
-- Nhánh mặc định: `main`; HEAD mới nhất tại lần đối chiếu ngày 07/11/2026: `bd3e598b91fed16b0ee8d517ac6f9a29134a8230` (`full manf hinh`).
-- GitHub đi trước ZIP 2 commit. So sánh ghi nhận thay đổi ròng ở `Data/borrow.txt`, `Data/request.txt`, `GUI/library_gui.cpp`, `GUI/ui_layout.h`, `Model/date.cpp`.
+- Nhánh mặc định: `main`; source mới nhất tại lần đối chiếu ngày 07/11/2026: `bd3e598b91fed16b0ee8d517ac6f9a29134a8230` (`full manf hinh`). Sau commit này có 4 commit chỉ cập nhật tài liệu.
+- So với ZIP HEAD `9e1474906b635f1f07cae4c2e04c3303b53ea7a2`, GitHub có 2 commit source mới. Thay đổi ròng nằm ở `Data/borrow.txt`, `Data/request.txt`, `GUI/library_gui.cpp`, `GUI/ui_layout.h`, `Model/date.cpp`; dữ liệu mẫu cũng thay đổi.
 - Không suy đoán trạng thái working tree local từ snapshot; không reset/checkout hoặc ghi đè thay đổi local chưa commit.
 
 ## 2. Quy tắc khi hỗ trợ code
@@ -56,7 +56,7 @@ Người dùng đã xác nhận các chức năng sau hoạt động ổn:
 Kết quả rà soát GitHub mới nhất:
 - **Tra cứu người dùng:** hiện chỉ tra cứu ID và hiển thị tên/vai trò; chưa hiển thị sách đang mượn và trạng thái từng phiếu.
 - **Thông báo đăng ký trùng:** Controller đã chặn yêu cầu trùng, nhưng GUI vẫn báo lỗi chung. Cần tách nguyên nhân nghiệp vụ để hiển thị đúng.
-- **Layout:** đã có chỉnh sửa source trong `GUI/library_gui.cpp` và `GUI/ui_layout.h` để kéo dài header/sidebar/panel. Chưa build/chạy xác minh, đặc biệt cần kiểm tra màn hình đăng nhập và nhiều tỷ lệ cửa sổ.
+- **Layout:** `GUI/library_gui.cpp` kéo dài header/sidebar/panel để lấp vùng trống; `GUI/ui_layout.h` có cập nhật định dạng/comment quanh cơ chế scale/offset. Chưa build/chạy xác minh; cần kiểm tra màn hình đăng nhập và nhiều tỷ lệ cửa sổ.
 - **Ngày sai:** `Model/date.cpp` đã gán ngày dự phòng khi constructor nhận ngày không hợp lệ; `library_gui::read_date()` phát hiện giá trị bị thay và trả lỗi. Chưa test runtime; xem xét tránh âm thầm thay ngày ở các luồng khác.
 - **Telex đăng nhập:** `GUI/login.cpp` vẫn lọc codepoint ngoài ASCII; chưa đáp ứng/kiểm chứng yêu cầu gõ `thawngs` phải giữ nguyên từng ký tự ASCII.
 
