@@ -216,6 +216,7 @@ void library_gui::clear_fields() {
     field_e[0] = '\0';
     field_f[0] = '\0';
     field_g[0] = '\0';
+    field_h[0] = '\0';
     active_field = nullptr;
     active_field_capacity = 0;
     list_page = 0;
@@ -461,7 +462,24 @@ void library_gui::draw_input(Rectangle box, const char* label,
     bool focused = active_field == value;
     DrawRectangleRounded(box, 0.08f, 6, WHITE);
     DrawRectangleRoundedLines(box, 0.08f, 6, focused ? BLUE : LIGHTGRAY);
-    DrawText(value, (int)box.x + 12, (int)box.y + 11, 20, DARKGRAY);
+    
+    // Bắt đầu chế độ cắt: Chỉ vẽ chữ trong giới hạn của ô input (box)
+    // Co lại 12 pixel ở mỗi bên để chữ không dính sát vào viền
+    BeginScissorMode((int)box.x + 12, (int)box.y, (int)box.width - 24, (int)box.height);
+    
+    // Tính toán chiều rộng chữ để đẩy sang trái nếu chữ quá dài (giúp xem được chữ đang gõ)
+    int text_width = MeasureText(value, 20);
+    int max_visible_width = (int)box.width - 24;
+    int text_x = (int)box.x + 12;
+    
+    if (focused && text_width > max_visible_width) {
+        text_x = (int)box.x + 12 - (text_width - max_visible_width);
+    }
+
+    DrawText(value, text_x, (int)box.y + 11, 20, DARKGRAY);
+    
+    // Kết thúc chế độ cắt
+    EndScissorMode();
 
     if (!input_locked &&
         CheckCollisionPointRec(ui_layout::mouse_position(), box) &&
@@ -887,8 +905,8 @@ void library_gui::draw_book_form(bool editing) {
     draw_input({340, 335, 360, 44}, "Thể loại", field_e, sizeof(field_e));
     draw_input({740, 335, 400, 44}, "Số lượng (0 - 10000)", field_f, sizeof(field_f));
     
-    static char temp_year_field[96] = ""; 
-    draw_input({340, 410, 360, 44}, "Năm xuất bản", temp_year_field, sizeof(temp_year_field));
+    // Đã thay thế biến static bằng field_h
+    draw_input({340, 410, 360, 44}, "Năm xuất bản", field_h, sizeof(field_h));
     draw_input({740, 410, 400, 44}, "Vị trí kệ sách", field_g, sizeof(field_g));
 
     if (draw_button({530, 500, 220, 48}, "Cập nhật sách", ORANGE)) {
@@ -897,13 +915,27 @@ void library_gui::draw_book_form(bool editing) {
         if (is_blank(field_a) || is_blank(field_b) || is_blank(field_c) ||
             is_blank(field_d) || is_blank(field_e) || is_blank(field_g) ||
             !read_integer(field_f, quantity, 0, 10000) ||
-            !read_integer(temp_year_field, year, 1000, 9999)) {
+            !read_integer(field_h, year, 1000, 9999)) { // Sửa thành field_h
             set_message("Nhập đầy đủ thông tin và số hợp lệ.", true);
         } else if (controller.get_book_by_id(field_a) == nullptr) {
             set_message("Không tìm thấy mã sách cũ.", true);
         } else {
             std::string old_id = field_a;
             std::string new_id = field_b;
+            if (old_id != new_id) {
+                if (controller.is_book_borrowed(old_id)) {
+                    set_message("Không thể đổi mã sách khi sách đang có người mượn.", true);
+                    return;
+                }
+                if (controller.has_pending_request_for_book(old_id)) {
+                    set_message("Không thể đổi mã sách khi còn yêu cầu mượn chờ duyệt.", true);
+                    return;
+                }
+                if (controller.get_book_by_id(new_id) != nullptr) {
+                    set_message("Mã sách mới đã tồn tại.", true);
+                    return;
+                }
+            }
             std::string title = field_c;
             std::string author = field_d;
             std::string category = field_e;
@@ -916,15 +948,15 @@ void library_gui::draw_book_form(bool editing) {
                 book replacement(new_id, title, author, category, quantity, year);
                 if (controller.update_book_info(old_id, replacement)) {
                     set_message("Đã cập nhật thông tin sách.");
-                    clear_fields();
-                    temp_year_field[0] = '\0';
+                    clear_fields(); // Dòng này sẽ xóa cả field_h
                 } else {
-                    set_message("Cập nhật thất bại.", true);
+                    set_message("Không thể cập nhật sách. Vui lòng kiểm tra lại mã sách và dữ liệu.", true);
                 }
             });
         }
     }
 }
+
 void library_gui::draw_book_delete() {
     DrawText("Xóa sách", CONTENT_X + 25, 120, 30, DARKBLUE);
     draw_back_button();
@@ -942,6 +974,14 @@ void library_gui::draw_book_delete() {
         }
 
         std::string id = field_a;
+        if (controller.has_pending_request_for_book(id)) {
+            set_message("Không thể xóa sách vì còn yêu cầu mượn đang chờ duyệt.", true);
+            return;
+        }
+        if (controller.is_book_borrowed(id)) {
+            set_message("Không thể xóa sách vì đang có người mượn hoặc chưa trả.", true);
+            return;
+        }
         std::string title = found->get_data().get_title();
         ask_confirm("Xác nhận xóa sách",
                     "Bạn có chắc chắn muốn xóa sách này?\n"
@@ -953,7 +993,7 @@ void library_gui::draw_book_delete() {
                 set_message("Đã xóa sách.");
                 clear_fields();
             } else {
-                set_message("Sách đang có người mượn, không thể xóa.", true);
+                set_message("Không thể xóa sách. Vui lòng kiểm tra lại dữ liệu.", true);
             }
         });
     }
@@ -1131,7 +1171,11 @@ void library_gui::draw_requests() {
             if (controller.approve_next_request()) {
                 set_message("Đã duyệt yêu cầu và tạo phiếu mượn.");
             } else {
-                set_message("Duyệt thất bại: hết sách hoặc trùng mã phiếu.", true);
+                set_message(
+                    "Duyệt thất bại. Yêu cầu vẫn ở đầu hàng đợi. "
+                    "Kiểm tra sách, tài khoản và số lượng; "
+                    "nếu yêu cầu không còn hợp lệ, hãy từ chối.",
+                    true);
             }
         });
         return;
@@ -1484,6 +1528,16 @@ void library_gui::draw_user_form(bool editing) {
                           "Vai trò: " + display_role(role);
 
     if (editing) {
+        if (old_id != id) {
+            if (controller.has_pending_request_for_user(old_id)) {
+                set_message("Không thể đổi mã tài khoản khi còn yêu cầu mượn chờ duyệt.", true);
+                return;
+            }
+            if (controller.get_user_by_id(id) != nullptr) {
+                set_message("Mã tài khoản mới đã tồn tại.", true);
+                return;
+            }
+        }
         ask_confirm("Xác nhận cập nhật tài khoản",
                     "Cập nhật tài khoản " + old_id + "?\n" + summary,
                     "Cập nhật", ORANGE,
@@ -1492,7 +1546,7 @@ void library_gui::draw_user_form(bool editing) {
                 set_message("Đã cập nhật tài khoản.");
                 clear_fields();
             } else {
-                set_message("Cập nhật thất bại.", true);
+                set_message("Không thể cập nhật tài khoản. Vui lòng kiểm tra lại mã và dữ liệu.", true);
             }
         });
     } else {
@@ -1527,9 +1581,25 @@ void library_gui::draw_user_delete() {
         set_message("Không tìm thấy tài khoản.", true);
         return;
     }
+    user* current_user = controller.get_current_user();
+    if (current_user != nullptr && current_user->get_id() == field_a) {
+        set_message("Không thể xóa tài khoản đang đăng nhập.", true);
+        return;
+    }
+    if (controller.has_pending_request_for_user(field_a)) {
+        set_message("Không thể xóa tài khoản vì còn yêu cầu mượn đang chờ duyệt.", true);
+        return;
+    }
+    if (controller.has_overdue_borrows(field_a)) {
+        set_message("Không thể xóa tài khoản vì còn sách quá hạn chưa trả.", true);
+        return;
+    }
     if (controller.has_active_borrows(field_a)) {
-        set_message("Không thể xóa tài khoản đang mượn sách "
-                    "hoặc còn sách quá hạn chưa trả.", true);
+        set_message("Không thể xóa tài khoản vì còn sách đang mượn chưa trả.", true);
+        return;
+    }
+    if (controller.has_user_shifts(field_a)) {
+        set_message("Không thể xóa tài khoản vì tài khoản vẫn có ca trực.", true);
         return;
     }
 
@@ -1545,7 +1615,7 @@ void library_gui::draw_user_delete() {
             set_message("Đã xóa tài khoản.");
             clear_fields();
         } else {
-            set_message("Xóa tài khoản thất bại.", true);
+            set_message("Không thể xóa tài khoản. Vui lòng kiểm tra lại dữ liệu.", true);
         }
     });
 }
@@ -1689,11 +1759,12 @@ void library_gui::draw_user_request() {
                 "Hạn trả: " + format_date(due_date),
                 "Gửi yêu cầu", BLUE,
                 [this, book_id, user_id, borrow_date, due_date]() {
-        if (controller.register_book_request(book_id, user_id, borrow_date, due_date)) {
-            set_message("Đã đưa yêu cầu vào hàng đợi.");
+        std::string out_msg; // Tạo biến chứa kết quả lỗi
+        if (controller.register_book_request(book_id, user_id, borrow_date, due_date, out_msg)) {
+            set_message(out_msg);
             clear_fields();
         } else {
-            set_message("Gửi yêu cầu thất bại. Kiểm tra thông tin mượn sách.", true);
+            set_message(out_msg, true); // Báo đúng lý do lỗi (Trùng sách, quá hạn, v.v.)
         }
     });
 }

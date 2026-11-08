@@ -1,16 +1,17 @@
 # Tiến độ dự án PBL2
 
-> Đối chiếu ngày 07/11/2026: ZIP HEAD `9e14749`; source mới nhất trên GitHub `main` là `bd3e598`. Các commit sau đó chỉ cập nhật tài liệu.
-> `[x]` = đã được xác nhận/kiểm thử phù hợp; `[~]` = đã có chỉnh sửa source nhưng chưa xác minh runtime; `[ ]` = còn thiếu.
+> Cập nhật ngày 08/11/2026 theo kết quả kiểm thử do người dùng báo cáo. Đây là kiểm thử thủ công trên bản chạy của người dùng; trong phiên này chưa có ZIP/source mới để đối chiếu commit hoặc kiểm thử độc lập.
+> `[x]` = đã được người dùng xác nhận qua kiểm thử phù hợp; `[~]` = đã có mã nguồn/chỉnh sửa nhưng chưa xác minh đầy đủ; `[ ]` = chưa thực hiện hoặc chưa kiểm thử.
 
 ## 1. Trạng thái tổng quan
 
-- Ứng dụng GUI Raylib đã có luồng đăng nhập, sidebar theo vai trò và nhiều màn hình nghiệp vụ.
-- Các tầng Model, Service, Controller, cấu trúc dữ liệu và thuật toán đã được tổ chức riêng.
+- Ứng dụng GUI Raylib có luồng đăng nhập, sidebar theo vai trò và các màn hình nghiệp vụ.
+- Các tầng Model, Service, Controller, cấu trúc dữ liệu và thuật toán được tổ chức riêng.
 - Dữ liệu được lưu bằng các tệp trong `Data/`.
-- Chưa có bằng chứng trong ZIP về một bộ kiểm thử tự động hoặc biên bản kiểm thử toàn hệ thống. Lần đối chiếu GitHub này cũng không chạy build hoặc GUI.
+- Chưa có bằng chứng về bộ kiểm thử tự động hoặc kiểm thử toàn hệ thống.
+- Trong phiên 08/11, người dùng đã chạy kiểm thử thủ công các trường hợp liên quan đến yêu cầu mượn, thao tác sách/tài khoản và hàng đợi. Không có thay đổi source nào được thực hiện trong phiên này.
 
-## 2. Chức năng đã có mã nguồn
+## 2. Chức năng và trạng thái kiểm thử
 
 ### Tài khoản và phân quyền
 - [x] Đăng nhập qua ID/mật khẩu.
@@ -18,117 +19,120 @@
 - [x] Đăng xuất có hộp thoại xác nhận.
 
 ### Sách
-- [x] Tìm kiếm sách.
-- [x] Thêm, sửa, xóa sách.
-- [x] Sắp xếp/lọc ở tầng nghiệp vụ.
-- [x] Gợi ý sách liên quan.
-- [x] Tra cứu vị trí kệ.
+- [x] Tìm kiếm, thêm, sửa, xóa sách.
+- [x] Sắp xếp/lọc ở tầng nghiệp vụ; gợi ý sách liên quan; tra cứu vị trí kệ.
+- [x] TC01: Không cho xóa sách đang có yêu cầu mượn chờ duyệt.
+- [x] TC02: Không cho đổi ID sách khi còn yêu cầu mượn chờ duyệt; thông báo chưa nêu rõ lý do.
+- [x] TC03: Cho phép sửa tên sách khi giữ nguyên ID; cần rà soát thêm logic và tham chiếu trước khi chốt hoàn toàn quy tắc.
 
-### Mượn/trả
+### Mượn/trả và hàng đợi
 - [x] Đăng ký yêu cầu mượn từ độc giả.
-- [x] Chặn cùng một độc giả gửi nhiều yêu cầu đang chờ cho cùng một đầu sách (người dùng đã xác nhận hoạt động ổn).
-- [x] Duyệt yêu cầu và tạo phiếu mượn.
-- [x] Từ chối yêu cầu, lưu trạng thái `Tu choi`.
-- [x] Trả sách và hoàn kho.
-- [x] Kiểm tra quá hạn.
-- [x] Lọc phiếu mượn theo khoảng ngày.
-- [x] Tách truy vấn sách đang mượn và lịch sử ở tầng Service.
+- [x] Chặn cùng một độc giả gửi nhiều yêu cầu đang chờ cho cùng một đầu sách (đã được xác nhận ở phiên trước).
+- [x] TC11: Duyệt yêu cầu hợp lệ và tạo phiếu mượn.
+- [x] TC12: Khi duyệt thất bại do điều kiện không đáp ứng, yêu cầu vẫn nằm ở đầu hàng đợi.
+- [x] TC13: Từ chối yêu cầu thành công và chuyển sang yêu cầu tiếp theo.
+- [x] TC10: Hàng đợi rỗng không gây lỗi trong trường hợp đã kiểm tra.
+- [x] TC14: Yêu cầu đang chờ được khôi phục sau khi đóng và mở lại chương trình.
+- [ ] TC09: Chưa kiểm thử FIFO với nhiều yêu cầu liên tiếp.
+- [ ] Chưa có kết quả kiểm thử toàn bộ tình huống lỗi ghi file/thoát đột ngột.
+
+### Tài khoản
+- [x] TC04: Không cho xóa tài khoản có yêu cầu đang chờ; thông báo chưa rõ lý do.
+- [x] TC05: Không cho đổi ID tài khoản có yêu cầu đang chờ; thông báo chưa rõ lý do.
+- [x] TC06: Cho phép sửa thông tin tài khoản khi giữ nguyên ID; cần rà soát thêm logic và tham chiếu.
+- [x] TC07: Xóa được sách không có yêu cầu chờ và không có người mượn.
+- [ ] TC08: Chưa kiểm thử xóa tài khoản không có yêu cầu chờ, phiếu mượn hoặc ca trực ràng buộc vì chưa có dữ liệu phù hợp.
 
 ### Thông báo
-- [x] Model và Service thông báo.
-- [x] Lưu/đọc `Data/notification.txt`.
-- [x] Tạo thông báo khi duyệt yêu cầu.
-- [x] Tạo thông báo khi từ chối yêu cầu, có thể kèm lý do.
-- [x] Đếm thông báo chưa đọc.
-- [x] Đánh dấu thông báo đã đọc.
+- [x] Model và Service thông báo; lưu/đọc `Data/notification.txt`.
+- [x] Tạo thông báo khi duyệt hoặc từ chối yêu cầu, có thể kèm lý do.
+- [x] Đếm thông báo chưa đọc và đánh dấu đã đọc.
 - [x] Có trang thông báo và chuông trên thanh đầu trang cho độc giả.
 
-### Ca trực và lương
-- [x] Đăng ký/hủy ca.
-- [x] Xóa ca.
-- [x] Xem lịch ca.
-- [x] Tính lương theo số ca.
+### Ca trực, lương và cấu trúc dữ liệu
+- [x] Đăng ký/hủy ca, xóa ca, xem lịch ca và tính lương theo số ca.
+- [x] Linked list, Queue, Stack, Hash table, Graph và các thuật toán tìm kiếm/sắp xếp đã có trong source.
 
-### Cấu trúc dữ liệu
-- [x] Linked list.
-- [x] Queue.
-- [x] Stack.
-- [x] Hash table.
-- [x] Graph và thuật toán BFS.
-- [x] Các thuật toán tìm kiếm/sắp xếp.
+## 3. Kết quả kiểm thử thủ công ngày 08/11/2026
 
-## 3. Chưa hoàn thiện hoặc cần xác minh
+Các kết quả dưới đây được ghi theo báo cáo của người dùng, không phải kết quả chạy lại từ phía trợ lý.
 
-- [ ] **P1:** Tra cứu người dùng và hiển thị sách người đó đang mượn kèm trạng thái từng phiếu (`Dang muon`, `Qua han`). Hiện `draw_users()` chỉ hiển thị ID, tên và vai trò.
-- [ ] **P1:** Đổi thông báo khi đăng ký mượn trùng để nêu rõ nguyên nhân. Logic chặn trùng đã có, nhưng GUI vẫn báo chung: `Gửi yêu cầu thất bại. Kiểm tra thông tin mượn sách.`
-- [~] **P1:** Layout: `GUI/library_gui.cpp` và `GUI/ui_layout.h` đã được chỉnh để kéo header/sidebar/khung nội dung lấp vùng trống. Chưa build/chạy để xác nhận ở nhiều tỷ lệ cửa sổ; chưa xác minh toàn bộ màn hình đăng nhập.
-- [~] **P1:** Ngày không hợp lệ: `Model/date.cpp` đã thay ngày sai bằng ngày dự phòng; `library_gui::read_date()` kiểm tra lại và trả `false` khi giá trị không khớp. Chưa chạy test ngày 31/02, tháng 13, năm 0, ngày nhuận; constructor hiện có thể âm thầm thay ngày sai ở luồng khác.
-- [ ] **P2:** Tinh chỉnh đăng nhập để chuỗi Telex ASCII như `thawngs` luôn được giữ nguyên trong lúc gõ, đồng thời không nhận Unicode có dấu. `GUI/login.cpp` hiện vẫn lọc codepoint ngoài ASCII, chưa chứng minh đáp ứng hành vi Telex yêu cầu.
+| Mã | Tình huống | Kết quả người dùng báo cáo | Trạng thái |
+|---|---|---|---|
+| TC01 | Xóa sách có yêu cầu mượn đang chờ duyệt | Không cho xóa, đúng mong đợi | [x] |
+| TC02 | Đổi ID sách có yêu cầu đang chờ | Không cho đổi; thông báo chỉ ghi “Cập nhật thất bại”, chưa nêu lý do | [x] hành vi chặn; [ ] thông báo |
+| TC03 | Sửa tên sách, giữ nguyên ID | Cho phép sửa; cần rà soát logic nghiệp vụ và tham chiếu | [x] hành vi; [ ] rà soát |
+| TC04 | Xóa tài khoản có yêu cầu đang chờ | Không cho xóa; thông báo chưa rõ lý do | [x] hành vi; [ ] thông báo |
+| TC05 | Đổi ID tài khoản có yêu cầu đang chờ | Không cho đổi; thông báo chưa rõ lý do | [x] hành vi; [ ] thông báo |
+| TC06 | Sửa thông tin tài khoản, giữ nguyên ID | Cho phép sửa; cần rà soát logic nghiệp vụ và tham chiếu | [x] hành vi; [ ] rà soát |
+| TC07 | Xóa sách không có yêu cầu chờ và không có người mượn | Xóa thành công | [x] |
+| TC08 | Xóa tài khoản không có yêu cầu chờ, phiếu mượn hoặc ca trực ràng buộc | Chưa kiểm thử vì chưa có dữ liệu phù hợp | [ ] |
+| TC09 | Nhiều yêu cầu trong hàng đợi, duyệt/từ chối liên tiếp | Chưa có kết quả; cần hướng dẫn/kịch bản kiểm thử | [ ] |
+| TC10 | Hàng đợi rỗng | Không phát sinh lỗi | [x] |
+| TC11 | Duyệt yêu cầu hợp lệ | Thành công | [x] |
+| TC12 | Duyệt yêu cầu không thể xử lý | Thất bại; yêu cầu vẫn ở đầu hàng đợi. Thông báo dài bị tràn/cắt ở cạnh dưới giao diện | [x] hành vi giữ yêu cầu; [ ] thông báo |
+| TC13 | Từ chối yêu cầu và nhập lý do | Từ chối thành công; khi nhập nội dung dài, chữ tràn và nội dung không còn nhìn thấy đầy đủ trong ô nhập | [x] thao tác; [ ] hiển thị nội dung dài |
+| TC14 | Khởi động lại khi còn yêu cầu chờ | Yêu cầu vẫn được khôi phục theo kết quả người dùng kiểm tra | [x] |
+
+### Rà soát quy tắc cập nhật sách/tài khoản
+
+- Việc giữ nguyên ID khi sửa tên/thông tin không làm thay đổi khóa định danh mà yêu cầu đang chờ sử dụng.
+- Cần kiểm tra source để xác nhận lúc duyệt yêu cầu, hệ thống truy xuất đúng sách/tài khoản theo ID hiện tại và không lưu bản sao thông tin cũ gây sai lệch.
+- Chưa kết luận đây là lỗi hay cần thay đổi nghiệp vụ; giữ lại làm mục rà soát trước khi chỉnh sửa.
+
+## 4. Vấn đề đã xác định và thứ tự ưu tiên
+
+### P0 - Ưu tiên cao nhất cho phiên làm việc tiếp theo: phản hồi lỗi và hiển thị nội dung dài
+
+Chưa sửa trong phiên 08/11. Phải xử lý mục này trước các nhiệm vụ khác ở phiên tiếp theo.
+
+1. **Thông báo khi đổi ID sách/tài khoản hoặc xóa tài khoản bị chặn:** nêu rõ nguyên nhân nghiệp vụ thay vì chỉ hiển thị “Cập nhật thất bại” hoặc “Xóa tài khoản thất bại”.
+2. **Thông báo khi duyệt yêu cầu thất bại:** yêu cầu vẫn được giữ ở đầu FIFO, nhưng thông báo dài bị cắt/tràn khỏi vùng hiển thị. Cần bố trí lại thông báo, tự xuống dòng hoặc dùng vùng hiển thị phù hợp.
+3. **Ô nhập lý do từ chối:** nội dung dài không hiển thị đầy đủ trong ô. Cần thiết kế cách xem/chỉnh sửa nội dung dài mà không làm mất dữ liệu nhập.
+4. **Thông báo xóa sách:** phân biệt trường hợp sách có người đang mượn với trường hợp sách có yêu cầu mượn đang chờ, nếu hai điều kiện được kiểm tra riêng.
+
+Yêu cầu khi thực hiện:
+- Đọc source mới nhất trước khi sửa; không dựa vào bản GitHub cũ nếu không khớp với bản local người dùng đã kiểm thử.
+- Nêu chính xác file, hàm và vị trí; ưu tiên cung cấp đoạn/hàm hoàn chỉnh để thay thế.
+- Không thay đổi nghiệp vụ FIFO hoặc tự động loại yêu cầu khỏi hàng đợi khi chưa thống nhất quy tắc.
+- Sau khi sửa, cung cấp test case cho trường hợp bình thường, biên, lỗi, dữ liệu dài, UTF-8 và kiểm thử hồi quy.
+- Chỉ đánh dấu hoàn thành sau khi người dùng chạy và xác nhận kết quả.
+
+### P1 - Rà soát logic cập nhật dữ liệu liên quan đến yêu cầu chờ
+
+- Kiểm tra `update_book_info()` và luồng sửa sách: sửa tên/tác giả/thể loại/số lượng/vị trí kệ nhưng giữ ID có an toàn với yêu cầu chờ hay không.
+- Kiểm tra `update_user_info()` và luồng sửa tài khoản: sửa tên/mật khẩu/vai trò nhưng giữ ID có an toàn với yêu cầu chờ hay không.
+- Xác nhận lúc duyệt yêu cầu, Controller lấy đúng dữ liệu sách và tài khoản theo ID hiện tại.
+- Kiểm tra trường hợp đổi ID bị chặn và trường hợp ID mới đã tồn tại; thông báo phải phản ánh đúng nguyên nhân.
+
+### P1 - Kiểm thử FIFO nhiều yêu cầu (TC09)
+
+Kịch bản đề xuất, chưa thực hiện:
+1. Tạo ba yêu cầu theo thứ tự REQ1, REQ2, REQ3.
+2. Mở màn hình quản lý yêu cầu và xác nhận REQ1 đứng đầu, tổng số là 3.
+3. Duyệt REQ1, xác nhận REQ2 đứng đầu và tổng số còn 2.
+4. Từ chối REQ2, xác nhận REQ3 đứng đầu và tổng số còn 1.
+5. Duyệt REQ3, xác nhận hàng đợi rỗng.
+6. Khởi động lại ứng dụng và kiểm tra dữ liệu sau xử lý.
+7. Đối chiếu lịch sử, phiếu mượn và thông báo để bảo đảm không mất, trùng hoặc đảo thứ tự yêu cầu.
+
+### P2 - Các công việc còn lại
+- [ ] Tra cứu người dùng và hiển thị sách người đó đang mượn cùng trạng thái `Dang muon`/`Qua han`.
+- [ ] Hiển thị đúng nguyên nhân khi đăng ký mượn trùng.
+- [ ] Build/chạy và hoàn thiện layout toàn cửa sổ ở nhiều kích thước.
+- [ ] Kiểm thử ngày sai, ngày nhuận và rà soát cách xử lý ngày dự phòng.
+- [ ] Sửa/kiểm thử bộ nhập đăng nhập để giữ nguyên chuỗi Telex ASCII.
 - [ ] Kiểm thử toàn bộ luồng trên GUI với cả ba vai trò.
-- [ ] Kiểm thử biên cho đăng ký, duyệt, từ chối, trả sách, quá hạn và xóa dữ liệu.
-- [ ] Xử lý trường hợp yêu cầu đầu hàng đợi không thể duyệt; cần quy tắc rõ ràng để tránh yêu cầu lỗi chặn FIFO.
-- [ ] Kiểm tra tính nhất quán giữa `request.txt`, `borrow.txt` và thông báo sau các tình huống lỗi hoặc thoát đột ngột.
-- [ ] Triển khai Undo người dùng và Undo phiếu mượn. Hai hàm hiện trả `false`.
-- [ ] Rà soát kiểm tra quyền ở tầng Controller/Service, không chỉ ẩn/hiện menu GUI.
-- [ ] Rà soát bảo vệ dữ liệu đăng nhập. `user.txt` hiện lưu mật khẩu dạng văn bản thuần.
-- [ ] Xác minh build sạch trên máy/môi trường mục tiêu.
-- [ ] Kiểm tra xử lý dữ liệu lỗi, dòng trống và file không mở được.
+- [ ] Kiểm tra nhất quán giữa `request.txt`, `borrow.txt` và thông báo sau lỗi/thoát đột ngột.
+- [ ] Triển khai Undo người dùng và Undo phiếu mượn.
+- [ ] Rà soát quyền ở Controller/Service và bảo vệ mật khẩu.
 
-## 4. Vấn đề kỹ thuật đã xác định từ mã nguồn
+## 5. Quy tắc cập nhật tiến độ và kiểm thử
 
-### P1. Thông báo khi đăng ký trùng chưa đủ rõ
-Vị trí: `Controller/library_controller.cpp`, hàm `register_book_request()`; `GUI/library_gui.cpp`, hàm `draw_user_request()`.
-
-Controller đã duyệt hàng đợi và chặn cùng `user_id` + `book_id` khi yêu cầu trước vẫn ở trạng thái `Cho duyet`. Tuy nhiên hàm chỉ trả về `false`; GUI gộp nhiều nguyên nhân thất bại thành một thông báo chung. Cần trả mã/kết quả nghiệp vụ cụ thể để GUI nói đúng lý do.
-
-### P1. Yêu cầu lỗi có thể chặn FIFO
-Vị trí: `Controller/library_controller.cpp`, hàm `approve_next_request()`.
-
-Nếu `borrow_book()` trả về `false`, hàm trả `false` và giữ nguyên phần tử đầu hàng đợi. Cần thống nhất cách xử lý: báo lỗi để quản trị viên có thể từ chối/xóa yêu cầu, hoặc cung cấp thao tác bỏ qua có kiểm soát. Không tự động pop khi chưa xác định quy tắc nghiệp vụ.
-
-### P2. Undo chưa hoàn chỉnh
-Vị trí: `Controller/library_controller.cpp`.
-
-- `undo_user_action()` trả về `false`.
-- `undo_borrow_action()` trả về `false`.
-- Chỉ Undo sách có phần xử lý cụ thể.
-
-### P2. Bảo mật dữ liệu mẫu
-Vị trí: `Data/user.txt`.
-
-Mật khẩu được ghi trực tiếp vào file. Không dùng mật khẩu cá nhân hoặc mật khẩu dùng lại ở dịch vụ khác. Nếu dự án cần mức bảo mật cao hơn, cần thiết kế lưu hash mật khẩu và quy trình chuyển đổi dữ liệu.
-
-### P2. Kiểm tra quyền nghiệp vụ
-GUI phân nhánh menu theo role, nhưng cần rà soát các hàm Controller để đảm bảo thao tác nhạy cảm không thể được gọi trái quyền từ một luồng khác.
-
-## 5. Nhiệm vụ đang làm
-
-Người dùng đã xác nhận các chức năng sau hoạt động ổn:
-- Chặn một độc giả gửi nhiều yêu cầu đang chờ cho cùng một đầu sách.
-- Không nhận ký tự tiếng Việt có dấu trong ô đăng nhập.
-- Danh sách yêu cầu đang chờ duyệt hiển thị ngay trong mục `Đăng ký mượn sách`.
-
-Đối chiếu GitHub mới nhất:
-- ZIP được gửi có HEAD `9e14749`; source trên GitHub `main` ở `bd3e598`, đi trước 2 commit source. Bốn commit tiếp theo chỉ cập nhật tài liệu.
-- Đã có thay đổi source cho layout và xử lý ngày không hợp lệ, nhưng chưa có kết quả build/chạy GUI nên chỉ ghi nhận là đã chỉnh source, chưa xác minh.
-- Tra cứu người dùng hiện mới hiển thị thông tin tài khoản, chưa liệt kê sách đang mượn.
-- Thông báo lỗi đăng ký trùng vẫn là thông báo chung.
-- Bộ nhập đăng nhập vẫn lọc codepoint ngoài ASCII; yêu cầu giữ nguyên chuỗi Telex ASCII chưa được xác minh/đáp ứng.
-
-**Nhiệm vụ ưu tiên tiếp theo: tra cứu người dùng và sách đang mượn.** Khi tra cứu một người dùng, giao diện cần hiển thị từng sách người đó đang mượn cùng trạng thái hiện tại (`Dang muon`/`Qua han`).
-## 6. Thứ tự ưu tiên thực hiện
-
-1. **Tra cứu người dùng và sách đang mượn:** hiển thị sách cùng trạng thái `Dang muon`/`Qua han` theo người dùng được chọn.
-2. **Thông báo đăng ký trùng:** đổi nội dung phản hồi để nêu rõ yêu cầu/sách đã tồn tại và lý do không thể gửi thêm.
-3. **Bố cục giao diện:** đã có chỉnh sửa source để kéo dài header/sidebar/khung nội dung; cần build và kiểm tra nhiều kích thước cửa sổ.
-4. **Ngày không hợp lệ:** đã có chỉnh sửa ở `Model/date.cpp` và `library_gui::read_date()`; cần test biên và rà soát việc constructor tự thay ngày sai bằng ngày mặc định.
-5. **Nhập Telex ở đăng nhập:** giữ nguyên chuỗi ASCII đang gõ như `thawngs`, đồng thời không nhận ký tự Unicode có dấu.
-6. Kiểm thử toàn bộ luồng, xử lý lỗi dữ liệu/file và rà soát quyền.
-7. Hoàn thiện Undo, nhất quán dữ liệu và bảo mật mật khẩu.
-
-## 7. Quy tắc cập nhật tiến độ
-
-- Chỉ đánh dấu `[x]` khi chức năng có mã nguồn và đã được kiểm tra theo luồng phù hợp.
-- Nếu mới thấy hàm hoặc màn hình trong source nhưng chưa chạy thử, ghi “đã có mã nguồn, chưa xác minh”.
+- Chỉ đánh dấu `[x]` khi có mã nguồn và đã được kiểm tra theo luồng phù hợp.
+- Ghi rõ kết quả do người dùng báo cáo hay do kiểm thử trực tiếp trong môi trường làm việc.
+- Nếu mới thấy hàm/màn hình trong source nhưng chưa chạy thử, ghi “đã có mã nguồn, chưa xác minh”.
 - Mỗi lỗi cần ghi: bước tái hiện, kết quả mong đợi, kết quả thực tế, file/hàm liên quan.
-- Sau mỗi nhiệm vụ, cập nhật `Current Task`, `Known Issues` và `CHANGELOG.md`.
+- Mọi thay đổi code phải kèm test case cho trường hợp bình thường, biên, lỗi và hồi quy; nêu kết quả mong đợi để người dùng kiểm tra.
+- Không tự ý reset, checkout hoặc ghi đè các thay đổi chưa commit.
+- Trước khi sửa, phải đọc đúng phiên bản source mới nhất trong ZIP/repository hiện tại.

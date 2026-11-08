@@ -10,3 +10,4 @@ US05;Đỗ Quốc Khánh;khanh123;user
 US06;Vũ Thu Hà;ha123;user
 US07;Bùi Gia Hân;han123;user
 US08;Đặng Hữu Phúc;phuc123;user
+thang;Nguyễn Thắng;123;user

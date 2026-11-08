@@ -36,6 +36,7 @@ private:
     char field_e[96];
     char field_f[96];
     char field_g[96];
+    char field_h[96];
     char* active_field;
     int active_field_capacity;
     std::string message;

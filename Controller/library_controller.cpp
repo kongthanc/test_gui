@@ -110,16 +110,19 @@ bool library_controller::add_new_book(std::string id, std::string title, std::st
 }
 
 bool library_controller::update_book_info(std::string old_id, book book_n) {
-    if (old_id != book_n.get_id() && br_service.is_book_borrowed(old_id)) {
-        return false;
+    // Không đổi ID sách khi vẫn còn yêu cầu mượn đang chờ.
+    if (old_id != book_n.get_id() &&
+        (br_service.is_book_borrowed(old_id) ||
+        has_pending_request_for_book(old_id))) {
+            return false;
     }
     return b_service.update_book(old_id, book_n);
 }
 
 bool library_controller::delete_book(std::string id) {
-    // RÃ€NG BUá»˜C TOÃ€N Váº¸N: KhÃ´ng cho xÃ³a sÃ¡ch Ä‘ang cÃ³ ngÆ°á»i mÆ°á»£n hoáº·c quÃ¡ háº¡n chÆ°a tráº£
-    if (br_service.is_book_borrowed(id)) {
-        return false; 
+    // Không xóa sách đang được yêu cầu mượn hoặc đang có người mượn.
+    if (has_pending_request_for_book(id) || br_service.is_book_borrowed(id)) {
+        return false;
     }
     return b_service.delete_book(id);
 }
@@ -226,16 +229,65 @@ std::string library_controller::generate_request_id() {
     return "REQ" + std::to_string(max_id + 1);
 }
 
+bool library_controller::has_pending_request_for_book(std::string book_id) {
+    int count = book_request_queue.get_size();
+    bool found = false;
+
+    // Duyệt một vòng, giữ nguyên thứ tự FIFO.
+    for (int i = 0; i < count; ++i) {
+        borrow req = book_request_queue.front();
+        book_request_queue.pop();
+
+        if (req.get_book_id() == book_id &&
+            req.get_status() == "Cho duyet") {
+            found = true;
+        }
+
+        book_request_queue.push(req);
+    }
+
+    return found;
+}
+
+bool library_controller::has_pending_request_for_user(std::string user_id) {
+    int count = book_request_queue.get_size();
+    bool found = false;
+
+    // Duyệt một vòng, giữ nguyên thứ tự FIFO.
+    for (int i = 0; i < count; ++i) {
+        borrow req = book_request_queue.front();
+        book_request_queue.pop();
+
+        if (req.get_user_id() == user_id &&
+            req.get_status() == "Cho duyet") {
+            found = true;
+        }
+
+        book_request_queue.push(req);
+    }
+
+    return found;
+}
+
 bool library_controller::register_book_request(
     std::string book_id, std::string user_id,
-    date b_date, date due_date) {
+    date b_date, date due_date, std::string& out_message) {
 
     node<book>* b_node = b_service.get_book_by_id(book_id);
-    if (b_node == nullptr) return false;
-    if (b_node->get_data().get_quantity() <= 0) return false;
-    if (due_date < b_date) return false;
+    if (b_node == nullptr) {
+        out_message = "Không tìm thấy mã sách.";
+        return false;
+    }
+    if (b_node->get_data().get_quantity() <= 0) {
+        out_message = "Sách này đã hết trong kho.";
+        return false;
+    }
+    if (due_date < b_date) {
+        out_message = "Hạn trả phải lớn hơn hoặc bằng ngày mượn.";
+        return false;
+    }
 
-    // Khong cho mot doc gia tao nhieu yeu cau dang cho cho cung mot dau sach.
+    // Không cho một độc giả tạo nhiều yêu cầu đang chờ cho cùng một đầu sách.
     bool has_duplicate_pending_request = false;
     int request_count = book_request_queue.get_size();
 
@@ -252,17 +304,25 @@ bool library_controller::register_book_request(
         book_request_queue.push(pending_request);
     }
 
-    if (has_duplicate_pending_request)
+    if (has_duplicate_pending_request) {
+        out_message = "Bạn đã có yêu cầu mượn cuốn sách này đang chờ duyệt.";
         return false;
+    }
 
-    if (br_service.is_user_borrowing_book(user_id, book_id))
+    if (br_service.is_user_borrowing_book(user_id, book_id)) {
+        out_message = "Bạn đang mượn cuốn sách này rồi.";
         return false;
+    }
 
-    if (br_service.has_overdue_borrows(user_id))
+    if (br_service.has_overdue_borrows(user_id)) {
+        out_message = "Bạn còn sách quá hạn chưa trả, không thể mượn thêm.";
         return false;
+    }
 
-    if (br_service.count_active_borrows_by_user(user_id) >= 7)
+    if (br_service.count_active_borrows_by_user(user_id) >= 7) {
+        out_message = "Bạn đã đạt giới hạn mượn tối đa 7 cuốn sách.";
         return false;
+    }
 
     std::string req_id = generate_request_id();
     borrow ticket(req_id, book_id, user_id, b_date, due_date, "Cho duyet");
@@ -270,6 +330,7 @@ bool library_controller::register_book_request(
     book_request_queue.push(ticket);
     save_requests();
 
+    out_message = "Đã đưa yêu cầu vào hàng đợi.";
     return true;
 }
 
@@ -391,12 +452,21 @@ bool library_controller::add_new_user(std::string id, std::string name, std::str
 }
 
 bool library_controller::update_user_info(std::string old_id, user updated_user) {
+    // Không đổi ID tài khoản khi còn yêu cầu mượn đang chờ.
+    if (old_id != updated_user.get_id() && has_pending_request_for_user(old_id)) {
+        return false;
+    }
     return u_service.update_user(old_id, updated_user);
 }
 
 bool library_controller::delete_user(std::string id) {
-    if (current_logged_in_user != nullptr && current_logged_in_user->get_id() == id) {
-        return false; 
+    if (current_logged_in_user != nullptr &&  current_logged_in_user->get_id() == id) {
+        return false;
+    }
+
+    // Không xóa tài khoản còn yêu cầu mượn đang chờ.
+    if (has_pending_request_for_user(id)) {
+        return false;
     }
     if (br_service.has_active_borrows(id)) {
         return false;
@@ -459,6 +529,14 @@ std::string library_controller::get_book_shelf(std::string book_id) {
         curr = curr->get_next();
     }
     return "Chua xep ke";
+}
+
+bool library_controller::is_book_borrowed(std::string book_id) const {
+    return br_service.is_book_borrowed(book_id);
+}
+
+bool library_controller::has_user_shifts(std::string user_id) const {
+    return s_service.has_shifts(user_id);
 }
 
 bool library_controller::has_active_borrows(std::string user_id) const {

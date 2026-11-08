@@ -1,16 +1,16 @@
-b001;Công nghệ thông tin;a1
-b002;Công nghệ thông tin;a1
+b001;Công Nghệ Thông Tin;a1
+b002;Công Nghệ Thông Tin;a1
 b003;Kỹ năng;c1
-b004;Công nghệ thông tin;a1
+b004;Công Nghệ Thông Tin;a1
 b005;Tiểu thuyết;b1
 b006;Tiểu thuyết;b1
-b007;Công nghệ thông tin;a1
-b008;Công nghệ thông tin;a1
-b009;Công nghệ thông tin;a1
-b010;Công nghệ thông tin;a2
-b011;Công nghệ thông tin;a2
-b012;Công nghệ thông tin;a2
-b013;Công nghệ thông tin;a2
+b007;Công Nghệ Thông Tin;a1
+b008;Công Nghệ Thông Tin;a1
+b009;Công Nghệ Thông Tin;a1
+b010;Công Nghệ Thông Tin;a2
+b011;Công Nghệ Thông Tin;a2
+b012;Công Nghệ Thông Tin;a2
+b013;Công Nghệ Thông Tin;a2
 b014;Kỹ năng;c1
 b015;Kỹ năng;c1
 b016;Kỹ năng;c1

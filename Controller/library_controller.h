@@ -70,6 +70,8 @@ public:
     bool update_book_info(std::string old_id, book book_n);
     bool delete_book(std::string id);
     node<book>* get_book_by_id(std::string id);
+    bool has_pending_request_for_book(std::string book_id);
+    bool is_book_borrowed(std::string book_id) const;
     void sort_books(bool (*cmp)(book, book));
     
     // Lọc phiếu mượn
@@ -85,7 +87,7 @@ public:
 
     // ================= 4. HÀNG ĐỢI ĐĂNG KÝ (QUEUE) =================
     std::string generate_request_id();
-    bool register_book_request(std::string book_id, std::string user_id, date b_date, date due_date);
+    bool register_book_request(std::string book_id, std::string user_id, date b_date, date due_date, std::string& out_message);
     bool has_pending_requests() const;
     borrow peek_next_request() const;
     bool approve_next_request();
@@ -108,6 +110,8 @@ public:
     bool update_user_info(std::string old_id, user updated_user);
     bool delete_user(std::string id);
     node<user>* get_user_by_id(std::string id);
+    bool has_pending_request_for_user(std::string user_id);
+    bool has_user_shifts(std::string user_id) const;
 
     // ================= 7. VỊ TRÍ KỆ SÁCH =================
     std::string get_book_shelf(std::string book_id);
