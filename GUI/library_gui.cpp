@@ -221,6 +221,7 @@ void library_gui::clear_fields() {
     active_field_capacity = 0;
     list_page = 0;
     suggestion_page = 0;
+    searched_user_id.clear();
 }
 
 void library_gui::switch_page(page next_page) {
@@ -1466,20 +1467,138 @@ void library_gui::draw_users() {
         return;
     }
 
-    draw_input({340, 295, 380, 44}, "Mã tài khoản cần tra cứu",
-               field_a, sizeof(field_a));
+    draw_input({340, 295, 380, 44}, "Mã tài khoản cần tra cứu", field_a, sizeof(field_a));
     if (draw_button({750, 295, 150, 44}, "Tra cứu")) {
         if (is_blank(field_a)) {
             set_message("Nhập mã tài khoản.", true);
+            searched_user_id.clear();
         } else {
             node<user>* found = controller.get_user_by_id(field_a);
             if (found == nullptr) {
                 set_message("Không tìm thấy tài khoản.", true);
+                searched_user_id.clear();
             } else {
-                user item = found->get_data();
-                set_message("Mã: " + item.get_id() + " | Tên: " +
-                            item.get_name() + " | Vai trò: " +
-                            display_role(item.get_role()));
+                searched_user_id = field_a;
+                set_message(""); // Xóa câu thông báo chung
+                list_page = 0;   // Reset trang danh sách
+            }
+        }
+    }
+
+    // Nếu tìm thấy tài khoản, vẽ thông tin và bảng danh sách tùy theo vai trò
+    if (!searched_user_id.empty()) {
+        node<user>* found = controller.get_user_by_id(searched_user_id);
+        if (found != nullptr) {
+            user item = found->get_data();
+            
+            // ================== CẢNH BÁO TÀI KHOẢN QUÁ HẠN ==================
+            // Kiểm tra xem độc giả có đang giữ sách quá hạn không
+            bool is_overdue = (item.get_role() == "user") && controller.has_overdue_borrows(searched_user_id);
+            Color user_info_color = is_overdue ? RED : DARKGREEN;
+            std::string warning_tag = is_overdue ? " [CẢNH BÁO: CÓ SÁCH QUÁ HẠN]" : "";
+            
+            DrawText(TextFormat("Kết quả: %s - %s (%s)%s", 
+                                item.get_id().c_str(), 
+                                item.get_name().c_str(), 
+                                display_role(item.get_role()).c_str(),
+                                warning_tag.c_str()), 
+                     340, 370, 20, user_info_color);
+            
+            // ================== HIỂN THỊ CA TRỰC CHO ADMIN / MANAGER ==================
+            if (item.get_role() == "admin" || item.get_role() == "manager") {
+                linked_list<shift> shifts = controller.get_my_shifts(searched_user_id);
+                int total = shifts.get_size();
+                
+                if (total == 0) {
+                    DrawText("Nhân viên này chưa đăng ký ca trực nào.", 340, 410, 18, DARKGRAY);
+                } else {
+                    DrawText("Lịch trực của nhân viên:", 340, 410, 18, DARKGRAY);
+                    
+                    const char* headers[] = {"Ngày trực", "Ca trực", "Số người", "Danh sách admin"};
+                    const int columns[] = {340, 520, 680, 840};
+                    draw_table_header(headers, columns, 4, 440);
+                    
+                    int rows_per_user_page = 3;
+                    int page_count = total == 0 ? 1 : (total + rows_per_user_page - 1) / rows_per_user_page;
+                    if (list_page >= page_count) list_page = page_count - 1;
+                    
+                    node<shift>* current = shifts.get_head();
+                    int skip = list_page * rows_per_user_page;
+                    while (current != nullptr && skip-- > 0) current = current->get_next();
+                    
+                    int row = 0;
+                    while (current != nullptr && row < rows_per_user_page) {
+                        shift s_item = current->get_data();
+                        int y = 480 + row * 40;
+                        DrawRectangle(CONTENT_X + 15, (float)y, CONTENT_W - 30, 38, row % 2 == 0 ? Color{245, 248, 252, 255} : Color{232, 239, 248, 255});
+                        
+                        date day = s_item.get_shift_date();
+                        DrawText(TextFormat("%d/%d/%d", day.get_day(), day.get_month(), day.get_year()), columns[0], y + 10, 16, DARKGRAY);
+                        DrawText(display_session(s_item.get_session()).c_str(), columns[1], y + 10, 16, DARKGRAY);
+                        DrawText(TextFormat("%d/4", s_item.get_current_count()), columns[2], y + 10, 16, DARKGRAY);
+                        
+                        // Cắt bớt danh sách admin nếu quá dài để tránh tràn cột
+                        std::string admins = s_item.get_all_admins_string();
+                        if (admins.length() > 30) admins = admins.substr(0, 27) + "...";
+                        DrawText(admins.c_str(), columns[3], y + 10, 16, DARKGRAY);
+                        
+                        current = current->get_next();
+                        ++row;
+                    }
+                    
+                    // Phân trang
+                    if (draw_button({CONTENT_X + 230, 615, 110, 40}, "Trước", GRAY) && list_page > 0) --list_page;
+                    if (draw_button({CONTENT_X + 550, 615, 110, 40}, "Sau", GRAY) && list_page + 1 < page_count) ++list_page;
+                    draw_paging_hint(list_page, total, 625, rows_per_user_page);
+                }
+            } 
+            // ================== HIỂN THỊ SÁCH ĐANG MƯỢN CHO USER ==================
+            else {
+                // Lấy danh sách phiếu mượn đang active (Đang mượn hoặc Quá hạn)
+                linked_list<borrow> records = controller.get_my_borrows(searched_user_id, true);
+                int total = records.get_size();
+                
+                if (total == 0) {
+                    DrawText("Độc giả này hiện không mượn sách nào.", 340, 410, 18, DARKGRAY);
+                } else {
+                    DrawText("Sách đang mượn / Quá hạn:", 340, 410, 18, DARKGRAY);
+                    
+                    const char* headers[] = {"Mã phiếu", "Mã sách", "Ngày mượn", "Hạn trả", "Trạng thái"};
+                    const int columns[] = {340, 470, 650, 810, 950};
+                    draw_table_header(headers, columns, 5, 440);
+                    
+                    int rows_per_user_page = 3;
+                    int page_count = total == 0 ? 1 : (total + rows_per_user_page - 1) / rows_per_user_page;
+                    if (list_page >= page_count) list_page = page_count - 1;
+                    
+                    node<borrow>* current = records.get_head();
+                    int skip = list_page * rows_per_user_page;
+                    while (current != nullptr && skip-- > 0) current = current->get_next();
+                    
+                    int row = 0;
+                    while (current != nullptr && row < rows_per_user_page) {
+                        borrow b_item = current->get_data();
+                        int y = 480 + row * 40;
+                        DrawRectangle(CONTENT_X + 15, (float)y, CONTENT_W - 30, 38, row % 2 == 0 ? Color{245, 248, 252, 255} : Color{232, 239, 248, 255});
+                        
+                        DrawText(b_item.get_id().c_str(), columns[0], y + 10, 16, DARKGRAY);
+                        DrawText(b_item.get_book_id().c_str(), columns[1], y + 10, 16, DARKGRAY);
+                        DrawText(format_date(b_item.get_borrow_date()).c_str(), columns[2], y + 10, 16, DARKGRAY);
+                        DrawText(format_date(b_item.get_due_date()).c_str(), columns[3], y + 10, 16, DARKGRAY);
+                        
+                        // In màu đỏ nếu sách quá hạn
+                        Color status_color = b_item.get_status() == "Qua han" ? RED : DARKGRAY;
+                        DrawText(display_status(b_item.get_status()).c_str(), columns[4], y + 10, 16, status_color);
+                        
+                        current = current->get_next();
+                        ++row;
+                    }
+                    
+                    // Phân trang
+                    if (draw_button({CONTENT_X + 230, 615, 110, 40}, "Trước", GRAY) && list_page > 0) --list_page;
+                    if (draw_button({CONTENT_X + 550, 615, 110, 40}, "Sau", GRAY) && list_page + 1 < page_count) ++list_page;
+                    draw_paging_hint(list_page, total, 625, rows_per_user_page);
+                }
             }
         }
     }

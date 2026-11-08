@@ -44,6 +44,7 @@ private:
     bool showing_related;
     bool showing_pending_requests;
     std::string selected_book_id;
+    std::string searched_user_id; // lưu tài khoản tra cứu
 
     // Hộp thoại xác nhận.
     bool confirm_open;

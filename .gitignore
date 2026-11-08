@@ -12,3 +12,5 @@ PROJECT_OVERVIEW.md: Kiến trúc, cấu trúc thư mục, chức năng, định
 PROGRESS.md: Tiến độ, chức năng đã có mã nguồn, vấn đề tồn tại và thứ tự ưu tiên.
 CHANGELOG.md: Lịch sử thay đổi được đối chiếu với source.
 HANDOFF.md: Thông tin để tiếp tục dự án ở cuộc trò chuyện mới.
+
+.tmp.driveupload/
