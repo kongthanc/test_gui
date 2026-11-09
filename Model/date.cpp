@@ -13,12 +13,8 @@ date::date(int day, int month, int year) {
     this->month = month;
     this->year = year;
     
-    if (!is_valid()) {
-        // Thay vì throw exception làm sập app, ta gán về ngày mặc định an toàn
-        this->day = 1;
-        this->month = 1;
-        this->year = 2026;
-    }
+    // Nếu ngày không hợp lệ (như 29/02 năm không nhuận, hoặc 31/04),
+    // Throw ra lỗi thay vì âm thầm gán ngày mặc định 01/01/2026.
     if (!is_valid()) {
         throw std::invalid_argument("Ngay thang nam khong hop le");
     }

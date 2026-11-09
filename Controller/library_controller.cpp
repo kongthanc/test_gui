@@ -139,8 +139,14 @@ linked_list<borrow> library_controller::filter_borrows_by_date(date start_date, 
     return br_service.filter_borrows_by_date(start_date, end_date);
 }
 
-bool library_controller::borrow_book(std::string borrow_id, std::string book_id, std::string user_id, date borrow_date, date due_date) {
-    return br_service.create_borrow_ticket(borrow_id, book_id, user_id, borrow_date, due_date, b_service, u_service);
+bool library_controller::borrow_book(std::string borrow_id, std::string book_id, std::string user_id, date borrow_date, date due_date, std::string& out_message) {
+    if (br_service.create_borrow_ticket(borrow_id, book_id, user_id, borrow_date, due_date, b_service, u_service, out_message)) {
+        //Lưu lịch đã tạo phiếu mượn
+        borrow new_ticket(borrow_id, book_id, user_id, borrow_date, due_date, "Dang muon");
+        borrow_undo_stack.push(action_log<borrow>(borrow_id, "ADD", new_ticket));
+        return true;
+    }
+    return false;
 }
 
 bool library_controller::return_book(std::string borrow_id) {
@@ -148,7 +154,16 @@ bool library_controller::return_book(std::string borrow_id) {
 }
 
 bool library_controller::delete_borrow(std::string borrow_id) {
-    return br_service.delete_borrow_ticket(borrow_id);
+    node<borrow>* old_node = br_service.get_borrow_by_id(borrow_id);
+    if (old_node != nullptr) {
+        borrow old_data = old_node->get_data();
+        if (br_service.delete_borrow_ticket(borrow_id)) {
+            // LƯU LỊCH SỬ: Đã xóa phiếu mượn
+            borrow_undo_stack.push(action_log<borrow>(borrow_id, "DELETE", old_data));
+            return true;
+        }
+    }
+    return false;
 }
 
 node<borrow>* library_controller::get_borrow_by_id(std::string id) {
@@ -345,9 +360,10 @@ borrow library_controller::peek_next_request() const {
 bool library_controller::approve_next_request() {
     if (book_request_queue.is_empty()) return false;
     borrow req = book_request_queue.front();
-    if (borrow_book(req.get_id(), req.get_book_id(),
-                    req.get_user_id(), req.get_borrow_date(),
-                    req.get_due_date())) {
+    std::string msg;
+    if (borrow_book(req.get_id(), req.get_book_id(), 
+        req.get_user_id(), req.get_borrow_date(), 
+            req.get_due_date(), msg)) {
         book_request_queue.pop();
         save_requests();
         node<book>* found = b_service.get_book_by_id(req.get_book_id());
@@ -448,7 +464,12 @@ linked_list<shift> library_controller::get_all_shifts() {
 
 bool library_controller::add_new_user(std::string id, std::string name, std::string password, std::string role) {
     user new_u(id, name, password, role);
-    return u_service.add_user(new_u);
+    if (u_service.add_user(new_u)) {
+        // LƯU LỊCH SỬ: Thêm tài khoản thành công -> Ghi log ADD
+        user_undo_stack.push(action_log<user>(id, "ADD", new_u));
+        return true;
+    }
+    return false;
 }
 
 bool library_controller::update_user_info(std::string old_id, user updated_user) {
@@ -456,25 +477,39 @@ bool library_controller::update_user_info(std::string old_id, user updated_user)
     if (old_id != updated_user.get_id() && has_pending_request_for_user(old_id)) {
         return false;
     }
-    return u_service.update_user(old_id, updated_user);
+    
+    // LƯU LỊCH SỬ: Lấy dữ liệu cũ trước khi update
+    node<user>* old_node = u_service.get_user_by_id(old_id);
+    if (old_node != nullptr) {
+        user old_data = old_node->get_data();
+        if (u_service.update_user(old_id, updated_user)) {
+            user_undo_stack.push(action_log<user>(old_id, "UPDATE", old_data));
+            return true;
+        }
+    }
+    return false;
 }
 
 bool library_controller::delete_user(std::string id) {
-    if (current_logged_in_user != nullptr &&  current_logged_in_user->get_id() == id) {
+    if (current_logged_in_user != nullptr && current_logged_in_user->get_id() == id) {
         return false;
     }
 
-    // Không xóa tài khoản còn yêu cầu mượn đang chờ.
-    if (has_pending_request_for_user(id)) {
+    // Không xóa tài khoản còn yêu cầu mượn đang chờ, có sách đang mượn, có ca trực
+    if (has_pending_request_for_user(id) || br_service.has_active_borrows(id) || s_service.has_shifts(id)) {
         return false;
     }
-    if (br_service.has_active_borrows(id)) {
-        return false;
+    
+    // LƯU LỊCH SỬ: Lấy dữ liệu cũ trước khi xóa
+    node<user>* old_node = u_service.get_user_by_id(id);
+    if (old_node != nullptr) {
+        user old_data = old_node->get_data();
+        if (u_service.delete_user(id)) {
+            user_undo_stack.push(action_log<user>(id, "DELETE", old_data));
+            return true;
+        }
     }
-    if (s_service.has_shifts(id)) {
-        return false;
-    }
-    return u_service.delete_user(id);
+    return false;
 }
 
 node<user>* library_controller::get_user_by_id(std::string id) {
@@ -642,9 +677,56 @@ bool library_controller::undo_book_action(std::string& out_message) {
 }
 
 bool library_controller::can_undo_user() const { return !user_undo_stack.empty(); }
-bool library_controller::undo_user_action(std::string& out_message) { return false; }
+
+bool library_controller::undo_user_action(std::string& out_message) {
+    if (user_undo_stack.empty()) {
+        out_message = "Không có thao tác tài khoản nào để hoàn tác!";
+        return false;
+    }
+    
+    // Lấy thao tác gần nhất ra khỏi stack
+    action_log<user> last = user_undo_stack.peek();
+    user_undo_stack.pop();
+
+    bool success = false;
+    if (last.get_action_type() == "ADD") {
+        success = u_service.delete_user(last.get_target_id());
+        out_message = "Đã hoàn tác: Xóa tài khoản vừa thêm [" + last.get_target_id() + "]";
+    } else if (last.get_action_type() == "DELETE") {
+        success = u_service.add_user(last.get_backup_data());
+        out_message = "Đã hoàn tác: Khôi phục tài khoản vừa xóa [" + last.get_target_id() + "]";
+    } else if (last.get_action_type() == "UPDATE") {
+        success = u_service.update_user(last.get_target_id(), last.get_backup_data());
+        out_message = "Đã hoàn tác: Khôi phục thông tin cũ của tài khoản [" + last.get_target_id() + "]";
+    }
+    return success;
+}
+
 bool library_controller::can_undo_borrow() const { return !borrow_undo_stack.empty(); }
-bool library_controller::undo_borrow_action(std::string& out_message) { return false; }
+
+bool library_controller::undo_borrow_action(std::string& out_message) {
+    if (borrow_undo_stack.empty()) {
+        out_message = "Không có thao tác phiếu mượn nào để hoàn tác!";
+        return false;
+    }
+
+    action_log<borrow> last = borrow_undo_stack.peek();
+    borrow_undo_stack.pop();
+
+    bool success = false;
+    if (last.get_action_type() == "ADD") {
+        success = br_service.undo_create_borrow(last.get_target_id(), b_service);
+        out_message = "Đã hoàn tác: Xóa phiếu mượn vừa lập [" + last.get_target_id() + "]. Đã cộng lại số lượng sách.";
+    } else if (last.get_action_type() == "DELETE") {
+        success = br_service.undo_delete_borrow(last.get_backup_data(), b_service);
+        out_message = "Đã hoàn tác: Khôi phục phiếu mượn vừa xóa [" + last.get_target_id() + "]";
+    }
+    
+    if (!success) {
+        out_message = "Không thể hoàn tác thao tác phiếu mượn này vì trạng thái không còn phù hợp.";
+    }
+    return success;
+}
 
 std::vector<notification> library_controller::get_my_notifications(
     std::string user_id) const {

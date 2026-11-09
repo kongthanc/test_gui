@@ -78,7 +78,8 @@ public:
     linked_list<borrow> filter_borrows_by_date(date start_date, date end_date);
 
     // ================= 3. NGHIỆP VỤ MƯỢN - TRẢ (BORROW) =================
-    bool borrow_book(std::string borrow_id, std::string book_id, std::string user_id, date borrow_date, date due_date);
+    bool borrow_book(std::string borrow_id, std::string book_id, std::string user_id, 
+        date borrow_date, date due_date, std::string& out_message);
     bool return_book(std::string borrow_id);
     bool delete_borrow(std::string borrow_id);
     node<borrow>* get_borrow_by_id(std::string id);

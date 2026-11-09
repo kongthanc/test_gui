@@ -66,44 +66,50 @@ bool borrow_service::save_data() {
 }
 
 // --- 3. Táº O PHIáº¾U MÆ¯á»¢N SÃCH (DÃ¹ng toÃ¡n tá»­ --) ---
-bool borrow_service::create_borrow_ticket(std::string borrow_id, std::string book_id, std::string user_id, date borrow_date, date due_date, book_service& b_service, user_service& u_service) {
-    // Check trÃ¹ng mÃ£ phiáº¿u mÆ°á»£n O(1)
-    if (borrow_index.find(borrow_id) != nullptr) return false;
-
-    // Check xem User cÃ³ tá»“n táº¡i khÃ´ng
-    if (u_service.get_user_by_id(user_id) == nullptr) return false;
-
-    // Check xem User cÃ³ Ä‘ang ná»£ sÃ¡ch quÃ¡ háº¡n khÃ´ng
-    if (has_overdue_borrows(user_id)) return false;
-
-    // GIá»šI Háº N MÆ¯á»¢N Tá»I ÄA 7 CUá»N ÄANG MÆ¯á»¢N
-    if (count_active_borrows_by_user(user_id) >= 7) return false;
-
-    // Check xem User cÃ³ Ä‘ang mÆ°á»£n chÃ­nh cuá»‘n sÃ¡ch nÃ y chÆ°a tráº£ khÃ´ng
-    if (is_user_borrowing_book(user_id, book_id)) return false;
-
-    // Check xem Book cÃ³ tá»“n táº¡i vÃ  cÃ²n sá»‘ lÆ°á»£ng khÃ´ng
+bool borrow_service::create_borrow_ticket(std::string borrow_id, std::string book_id, std::string user_id, date borrow_date, date due_date, book_service& b_service, user_service& u_service, std::string& out_message) {
+    if (borrow_index.find(borrow_id) != nullptr) {
+        out_message = "Mã phiếu mượn đã tồn tại.";
+        return false;
+    }
+    if (u_service.get_user_by_id(user_id) == nullptr) {
+        out_message = "Không tìm thấy mã độc giả.";
+        return false;
+    }
+    if (has_overdue_borrows(user_id)) {
+        out_message = "Độc giả đang có sách quá hạn chưa trả.";
+        return false;
+    }
+    if (count_active_borrows_by_user(user_id) >= 7) {
+        out_message = "Độc giả đã mượn tối đa 7 cuốn sách.";
+        return false;
+    }
+    if (is_user_borrowing_book(user_id, book_id)) {
+        out_message = "Độc giả đang mượn cuốn sách này rồi.";
+        return false;
+    }
     node<book>* book_node = b_service.get_book_by_id(book_id);
-    if (book_node == nullptr) return false;
-    if (due_date < borrow_date) return false; // NgÃ y háº¹n tráº£ khÃ´ng Ä‘Æ°á»£c trÆ°á»›c ngÃ y mÆ°á»£n
-    
-    // Láº¥y tham chiáº¿u trá»±c tiáº¿p Ä‘áº¿n Ä‘á»‘i tÆ°á»£ng book bÃªn trong node kho sÃ¡ch
+    if (book_node == nullptr) {
+        out_message = "Không tìm thấy mã sách.";
+        return false;
+    }
+    if (due_date < borrow_date) {
+        out_message = "Ngày hạn trả không được trước ngày mượn.";
+        return false;
+    }
     book& target_book = book_node->get_Data();
-    if (target_book.get_quantity() <= 0) return false; // Háº¿t sÃ¡ch trong kho
+    if (target_book.get_quantity() <= 0) {
+        out_message = "Sách đã hết số lượng trong kho.";
+        return false;
+    }
 
-    // DÃ™NG TOÃN Tá»¬ -- Äá»‚ TRá»ª KHO TRá»°C TIáº¾P TRÃŠN RAM
     --target_book;
-
-    // Táº¡o phiáº¿u mÆ°á»£n má»›i vá»›i tráº¡ng thÃ¡i ban Ä‘áº§u lÃ  "Dang muon"
     borrow new_ticket(borrow_id, book_id, user_id, borrow_date, due_date, "Dang muon");
-
     borrow_list.push_back(new_ticket);
     borrow_index.insert(borrow_id, borrow_list.get_tail());
-
-    // Tá»± Ä‘á»™ng lÆ°u ngay xuá»‘ng file Ä‘á»ƒ Ä‘áº£m báº£o an toÃ n dá»¯ liá»‡u
     save_data();
     b_service.save_data();
-
+    
+    out_message = "Tạo phiếu mượn thành công.";
     return true;
 }
 
@@ -324,4 +330,42 @@ void borrow_service::log_rejected_request(borrow b) {
     borrow_list.push_back(b);
     borrow_index.insert(b.get_id(), borrow_list.get_tail());
     save_data(); // Ghi ngay xuống file borrow.txt
+}
+
+// --- 8. HOÀN TÁC TRẢ SÁCH / XÓA PHIẾU ---
+// Khi hoàn tác xóa, ta phải phục hồi phiếu về trạng thái "Đã trả" (vì chỉ xóa được khi đã trả)
+// Nên KHÔNG cần trừ đi 1 số lượng sách trong kho (vì sách đang nằm trong kho rồi)
+bool borrow_service::undo_delete_borrow(borrow old_borrow, book_service& b_service) {
+    if (borrow_index.find(old_borrow.get_id()) != nullptr) return false;
+
+    borrow_list.push_back(old_borrow);
+    borrow_index.insert(old_borrow.get_id(), borrow_list.get_tail());
+
+    save_data();
+    return true;
+}
+
+// --- 9. HOÀN TÁC LẬP PHIẾU MƯỢN ---
+// Khi hoàn tác lập phiếu, phiếu đó sẽ bị xóa bỏ hoàn toàn
+// Và ta phải HOÀN LẠI (+1) số lượng sách vào kho
+bool borrow_service::undo_create_borrow(std::string borrow_id, book_service& b_service) {
+    node<borrow>* target = borrow_index.find(borrow_id);
+    if (target == nullptr) return false;
+
+    // Chỉ hoàn tác được nếu phiếu vẫn đang ở trạng thái "Dang muon"
+    if (target->get_Data().get_status() != "Dang muon") return false;
+
+    // +1 lại số lượng sách vào kho
+    node<book>* book_node = b_service.get_book_by_id(target->get_Data().get_book_id());
+    if (book_node != nullptr) {
+        book& target_book = book_node->get_Data();
+        ++target_book; 
+    }
+
+    borrow_index.remove(borrow_id);
+    borrow_list.remove_node(target);
+
+    save_data();
+    b_service.save_data();
+    return true;
 }

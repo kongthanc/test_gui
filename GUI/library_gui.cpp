@@ -420,15 +420,17 @@ bool library_gui::read_date(const char* text, date& value) const {
         return false;
     }
 
-    date parsed(day, month, year);
-    if (parsed.get_day() != day ||
-        parsed.get_month() != month ||
-        parsed.get_year() != year) {
+    try {
+        // Cố gắng tạo đối tượng date, nếu sai ngày (ví dụ 29/02/2026) 
+        // date.cpp sẽ "throw" lỗi ra ngoài
+        date parsed(day, month, year);
+        value = parsed;
+        return true;
+    } catch (const std::invalid_argument& e) {
+        // "Hứng" lỗi tại đây để chương trình KHÔNG BỊ CRASH
+        // Báo về cho GUI biết là ngày nhập không hợp lệ (trả về false)
         return false;
     }
-
-    value = parsed;
-    return true;
 }
 
 void library_gui::collect_text_input() {
@@ -464,9 +466,13 @@ void library_gui::draw_input(Rectangle box, const char* label,
     DrawRectangleRounded(box, 0.08f, 6, WHITE);
     DrawRectangleRoundedLines(box, 0.08f, 6, focused ? BLUE : LIGHTGRAY);
     
-    // Bắt đầu chế độ cắt: Chỉ vẽ chữ trong giới hạn của ô input (box)
-    // Co lại 12 pixel ở mỗi bên để chữ không dính sát vào viền
-    BeginScissorMode((int)box.x + 12, (int)box.y, (int)box.width - 24, (int)box.height);
+    // Đồng bộ tọa độ Camera (World) sang tọa độ màn hình (Screen) cho ScissorMode
+    Vector2 top_left = GetWorldToScreen2D(Vector2{box.x + 12, box.y}, ui_layout::camera());
+    Vector2 bottom_right = GetWorldToScreen2D(Vector2{box.x + box.width - 12, box.y + box.height}, ui_layout::camera());
+    
+    // Bắt đầu chế độ cắt với tọa độ màn hình vật lý chính xác
+    BeginScissorMode((int)top_left.x, (int)top_left.y, 
+                     (int)(bottom_right.x - top_left.x), (int)(bottom_right.y - top_left.y));
     
     // Tính toán chiều rộng chữ để đẩy sang trái nếu chữ quá dài (giúp xem được chữ đang gõ)
     int text_width = MeasureText(value, 20);
@@ -1004,23 +1010,27 @@ void library_gui::draw_borrows() {
     draw_back_button();
 
     DrawText("Chọn nghiệp vụ:", 340, 195, 22, DARKGRAY);
-    if (draw_button({340, 240, 210, 50}, "Lập phiếu mượn")) {
+    // Thu gọn nút để nhét thêm nút Hoàn Tác
+    if (draw_button({340, 240, 175, 50}, "Lập phiếu")) {
         open_page(BORROW_CREATE);
         return;
     }
-    if (draw_button({580, 240, 200, 50}, "Xác nhận trả", ORANGE)) {
+    if (draw_button({545, 240, 175, 50}, "Xác nhận trả", ORANGE)) {
         open_page(BORROW_RETURN);
         return;
     }
-    if (draw_button({810, 240, 200, 50}, "Xóa phiếu", RED)) {
+    if (draw_button({750, 240, 175, 50}, "Xóa phiếu", RED)) {
         open_page(BORROW_DELETE);
         return;
     }
+    if (draw_button({955, 240, 150, 50}, "Hoàn tác", PURPLE)) {
+        std::string msg;
+        bool ok = controller.undo_borrow_action(msg);
+        set_message(msg, !ok);
+    }
 
-    DrawText("Mỗi phiếu cần có mã phiếu, mã sách, mã độc giả,",
-             340, 345, 21, DARKGRAY);
-    DrawText("ngày mượn và thời hạn 7, 14 hoặc 30 ngày.",
-             340, 380, 21, DARKGRAY);
+    DrawText("Mỗi phiếu cần có mã phiếu, mã sách, mã độc giả,", 340, 345, 21, DARKGRAY);
+    DrawText("ngày mượn và thời hạn 7, 14 hoặc 30 ngày.", 340, 380, 21, DARKGRAY);
 }
 
 void library_gui::draw_borrow_create() {
@@ -1076,13 +1086,12 @@ void library_gui::draw_borrow_create() {
                 "Hạn trả: " + due_text,
                 "Tạo phiếu", BLUE,
                 [this, borrow_id, book_id, user_id, borrow_date, due_date, due_text]() {
-        if (controller.borrow_book(borrow_id, book_id, user_id,
-                                   borrow_date, due_date)) {
+        std::string msg;
+        if (controller.borrow_book(borrow_id, book_id, user_id, borrow_date, due_date, msg)) {
             set_message("Đã tạo phiếu. Hạn trả: " + due_text);
             clear_fields();
         } else {
-            set_message("Tạo phiếu thất bại. Kiểm tra mã phiếu, "
-                        "số lượng sách hoặc thông tin mượn.", true);
+            set_message(msg, true); // Hiển thị nguyên nhân chi tiết
         }
     });
 }
@@ -1454,17 +1463,23 @@ void library_gui::draw_users() {
     DrawText("Quản lý người dùng", CONTENT_X + 25, 120, 30, DARKBLUE);
     draw_back_button();
 
-    if (draw_button({340, 185, 175, 48}, "Thêm tài khoản")) {
+    if (draw_button({340, 185, 165, 48}, "Thêm tài khoản")) {
         open_page(USER_ADD);
         return;
     }
-    if (draw_button({545, 185, 175, 48}, "Sửa tài khoản", ORANGE)) {
+    if (draw_button({520, 185, 165, 48}, "Sửa tài khoản", ORANGE)) {
         open_page(USER_EDIT);
         return;
     }
-    if (draw_button({750, 185, 175, 48}, "Xóa tài khoản", RED)) {
+    if (draw_button({700, 185, 165, 48}, "Xóa tài khoản", RED)) {
         open_page(USER_DELETE);
         return;
+    }
+    if (draw_button({880, 185, 130, 48}, "Hoàn tác", PURPLE)) {
+        std::string msg;
+        bool ok = controller.undo_user_action(msg);
+        set_message(msg, !ok);
+        searched_user_id.clear(); // Xóa thông tin tra cứu hiện tại để tránh hiển thị user vừa bị xóa/đổi
     }
 
     draw_input({340, 295, 380, 44}, "Mã tài khoản cần tra cứu", field_a, sizeof(field_a));

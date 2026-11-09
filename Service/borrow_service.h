@@ -24,11 +24,12 @@ public:
     bool load_data();
     bool save_data();
 
-    bool create_borrow_ticket(std::string borrow_id, std::string book_id, std::string user_id, date borrow_date, date due_date, book_service& b_service, user_service& u_service);
+    bool create_borrow_ticket(std::string borrow_id, std::string book_id, std::string user_id, 
+        date borrow_date, date due_date, book_service& b_service, 
+        user_service& u_service, std::string& out_message);
     bool return_book(std::string borrow_id, book_service& b_service);
     bool delete_borrow_ticket(std::string borrow_id); 
 
-    // ĐÃ THÊM HÀM NÀY VÀO ĐÂY:
     void log_rejected_request(borrow b);
 
     void check_and_update_overdue(date current_date);
@@ -44,4 +45,8 @@ public:
 
     int count_active_borrows_by_user(std::string user_id) const;
     int count_borrows_by_book(std::string book_id) const;
+
+    // --- HOÀN TÁC PHIẾU MƯỢN ---
+    bool undo_delete_borrow(borrow old_borrow, book_service& b_service);
+    bool undo_create_borrow(std::string borrow_id, book_service& b_service);
 };
