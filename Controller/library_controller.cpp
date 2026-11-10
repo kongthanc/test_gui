@@ -582,6 +582,10 @@ int library_controller::get_user_active_borrow_count(std::string user_id) const 
     return br_service.count_active_borrows_by_user(user_id);
 }
 
+linked_list<book> library_controller::filter_books(std::string title, std::string author, std::string category) {
+    return b_service.filter_books(title, author, category, 0); // year = 0
+}
+
 // THUẬT TOÁN ĐỒ THỊ (GRAPH BFS) - GỢI Ý SÁCH
 // ================= TÍNH NĂNG GỢI Ý SÁCH (DÙNG ĐỒ THỊ GRAPH BFS) =================
 linked_list<book> library_controller::get_recommended_books(std::string author, std::string category, std::string exclude_book_id) {

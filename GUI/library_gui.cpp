@@ -655,108 +655,101 @@ void library_gui::draw_books(const std::string& role, bool user_search) {
              CONTENT_X + 25, 120, 30, DARKBLUE);
     draw_back_button();
 
-    draw_input({CONTENT_X + 20, 185, 340, 44},
-               "Mã sách, tên sách hoặc tên tác giả",
-               field_a, sizeof(field_a));
-    if (draw_button({CONTENT_X + 375, 185, 95, 44}, "Tìm")) {
+    // 1. Ô tìm kiếm (Tên sách được nới rộng cho thoải mái)
+    draw_input({CONTENT_X + 20, 185, 260, 44}, "Tên sách", field_a, sizeof(field_a));
+    draw_input({CONTENT_X + 295, 185, 260, 44}, "Tên tác giả", field_b, sizeof(field_b));
+    draw_input({CONTENT_X + 570, 185, 170, 44}, "Thể loại", field_c, sizeof(field_c));
+
+    if (draw_button({CONTENT_X + 755, 185, 75, 44}, "Tìm")) {
         list_page = 0;
-        suggestion_page = 0;
         selected_book_id.clear();
     }
-    if (draw_button({CONTENT_X + 485, 185, 110, 44}, "Tất cả", GRAY)) {
+    if (draw_button({CONTENT_X + 840, 185, 75, 44}, "Tất cả", GRAY)) {
         field_a[0] = '\0';
+        field_b[0] = '\0';
+        field_c[0] = '\0';
         list_page = 0;
-        suggestion_page = 0;
         selected_book_id.clear();
     }
 
     if (!user_search) {
-        if (draw_button({CONTENT_X + 615, 185, 145, 44}, "Thêm sách")) {
+        if (draw_button({CONTENT_X + 20, 245, 130, 44}, "Thêm sách")) {
             open_page(BOOK_ADD);
             return;
         }
-        if (draw_button({CONTENT_X + 515, 245, 140, 44}, "Sửa sách", ORANGE)) {
+        if (draw_button({CONTENT_X + 165, 245, 130, 44}, "Sửa sách", ORANGE)) {
             open_page(BOOK_EDIT);
             return;
         }
-        if (draw_button({CONTENT_X + 670, 245, 140, 44}, "Xóa sách", RED)) {
+        if (draw_button({CONTENT_X + 310, 245, 130, 44}, "Xóa sách", RED)) {
             open_page(BOOK_DELETE);
             return;
         }
-        if (draw_button({CONTENT_X + 770, 185, 105, 44}, "Hoàn Tác", PURPLE)) {
+        if (draw_button({CONTENT_X + 455, 245, 110, 44}, "Hoàn Tác", PURPLE)) {
             std::string msg;
             bool ok = controller.undo_last_book_action(msg);
             set_message(msg, !ok);
-            list_page = 0; // Đưa về trang 1 để xem kết quả hoàn tác
+            list_page = 0;
         }
     }
 
-    linked_list<book> books = controller.search_books(field_a);
+    linked_list<book> books = controller.filter_books(field_a, field_b, field_c);
     int total = books.get_size();
-    int page_count = total == 0 ? 1 : (total + BOOKS_PER_PAGE - 1) / BOOKS_PER_PAGE;
+    
+    // Tăng số lượng dòng hiển thị mỗi trang lên 8 dòng vì đã bỏ phần gợi ý bên dưới
+    const int ROWS_PER_PAGE_BOOK = 8;
+    int page_count = total == 0 ? 1 : (total + ROWS_PER_PAGE_BOOK - 1) / ROWS_PER_PAGE_BOOK;
     if (list_page >= page_count) list_page = page_count - 1;
 
-    DrawText("Kết quả tìm kiếm", 325, 250, 18, DARKGRAY);
-    const char *headers[] = {
-        "Mã", "Tên sách", "Tác giả", "Thể loại", "Còn", "Thao tác"};
-    const int columns[] = {330, 390, 610, 785, 915, 1030};
+    int table_start_y = user_search ? 255 : 345; 
+    
+    DrawText("Kết quả tìm kiếm", 325, table_start_y - 25, 18, DARKGRAY);
 
-    if (user_search)
-    {
-        draw_table_header(headers, columns, 6, 278);
-    }
-    else
-    {
-        const char *manager_headers[] = {
-            "Mã", "Tên sách", "Tác giả", "Thể loại"};
-        const int manager_columns[] = {330, 405, 675, 865};
-        draw_table_header(manager_headers, manager_columns, 4, 278);
-    }
+    // Cấu hình các cột (Nới rộng cột Tên sách từ 390 lên 420 để chứa trọn vẹn tên dài)
+    const char *headers[] = {"Mã", "Tên sách", "Tác giả", "Thể loại", "Còn", "Thao tác"};
+    const int columns[] = {330, 390, 610, 785, 905, 1020};
+    draw_table_header(headers, columns, 6, table_start_y);
 
     node<book>* current = books.get_head();
-    int skip = list_page * BOOKS_PER_PAGE;
+    int skip = list_page * ROWS_PER_PAGE_BOOK;
     while (current != nullptr && skip-- > 0) current = current->get_next();
 
     int row = 0;
-    while (current != nullptr && row < BOOKS_PER_PAGE) {
+    while (current != nullptr && row < ROWS_PER_PAGE_BOOK) {
         book item = current->get_data();
-        int y = 318 + row * 34;
-        Rectangle row_box = {CONTENT_X + 15.0f, (float)y,
-                             CONTENT_W - 30.0f, 32.0f};
+        int y = table_start_y + 40 + row * 40; // Giãn khoảng cách các dòng cho thoáng mắt
+        Rectangle row_box = {CONTENT_X + 15.0f, (float)y, CONTENT_W - 30.0f, 38.0f};
         bool selected = item.get_id() == selected_book_id;
         DrawRectangleRec(row_box, selected ? Color{205, 225, 250, 255}
                                            : (row % 2 == 0 ? Color{245, 248, 252, 255}
                                                            : Color{232, 239, 248, 255}));
-        DrawText(item.get_id().c_str(), 330, y + 8, 15, DARKGRAY);
 
-        if (user_search)
-        {
-            DrawText(item.get_title().c_str(), 390, y + 8, 14, DARKGRAY);
-            DrawText(item.get_author().c_str(), 610, y + 8, 14, DARKGRAY);
-            DrawText(item.get_category().c_str(), 785, y + 8, 14, DARKGRAY);
-            DrawText(TextFormat("%d", item.get_quantity()),
-                     925, y + 8, 15, DARKGREEN);
+        DrawText(item.get_id().c_str(), columns[0], y + 11, 16, DARKGRAY);
+        
+        // In trực tiếp tên sách đầy đủ (không dùng cắt chuỗi ... nữa vì cột đã rất rộng)
+        DrawText(item.get_title().c_str(), columns[1], y + 11, 15, DARKGRAY);
 
-            if (draw_button({1030, (float)y + 2, 115, 28},
-                            "Mượn sách", item.get_quantity() > 0 ? BLUE : GRAY) &&
-                item.get_quantity() > 0)
-            {
+        DrawText(item.get_author().c_str(), columns[2], y + 11, 15, DARKGRAY);
+        DrawText(item.get_category().c_str(), columns[3], y + 11, 15, DARKGRAY);
+        DrawText(TextFormat("%d", item.get_quantity()), columns[4], y + 11, 16, DARKGREEN);
+
+        bool can_borrow = user_search && (item.get_quantity() > 0);
+        if (draw_button({(float)columns[5], (float)y + 5, 105, 28}, 
+                        user_search ? "Mượn sách" : "Chi tiết", 
+                        can_borrow || !user_search ? BLUE : GRAY) && (can_borrow || !user_search)) {
+            if (user_search) {
                 std::string book_id = item.get_id();
                 open_page(USER_REQUEST);
                 std::strncpy(field_b, book_id.c_str(), sizeof(field_b) - 1);
                 field_b[sizeof(field_b) - 1] = '\0';
                 return;
+            } else {
+                selected_book_id = item.get_id();
             }
         }
-        else
-        {
-            DrawText(item.get_title().c_str(), 405, y + 8, 15, DARKGRAY);
-            DrawText(item.get_author().c_str(), 675, y + 8, 15, DARKGRAY);
-            DrawText(item.get_category().c_str(), 865, y + 8, 15, DARKGRAY);
-        }
+
         if (CheckCollisionPointRec(ui_layout::mouse_position(), row_box) &&
             IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
-            if (selected_book_id != item.get_id()) suggestion_page = 0;
             selected_book_id = item.get_id();
         }
         current = current->get_next();
@@ -764,93 +757,15 @@ void library_gui::draw_books(const std::string& role, bool user_search) {
     }
 
     if (total == 0) {
-        DrawText("Không tìm thấy sách phù hợp.", 330, 325, 18, RED);
+        DrawText("Không tìm thấy sách phù hợp.", 330, table_start_y + 50, 18, RED);
     }
 
-    if (draw_button({CONTENT_X + 230, 458, 90, 34}, "Trước", GRAY) &&
-        list_page > 0) --list_page;
-    if (draw_button({CONTENT_X + 550, 458, 90, 34}, "Sau", GRAY) &&
-        list_page + 1 < page_count) ++list_page;
-    draw_paging_hint(list_page, total, 466, BOOKS_PER_PAGE);
+    // Đặt vị trí nút phân trang ở phía dưới cùng một cách cân đối
+    int paging_y = table_start_y + 40 + ROWS_PER_PAGE_BOOK * 40 + 15; 
 
-    DrawText("SÁCH GỢI Ý", 325, 505, 19, DARKGREEN);
-    if (selected_book_id.empty()) {
-        DrawText("Chọn một cuốn sách trong kết quả để xem gợi ý.",
-                 330, 540, 17, GRAY);
-        return;
-    }
-
-    node<book>* selected_node = controller.get_book_by_id(selected_book_id);
-    if (selected_node == nullptr) {
-        selected_book_id.clear();
-        DrawText("Không tìm thấy sách đã chọn.", 330, 540, 17, RED);
-        return;
-    }
-
-    book source = selected_node->get_data();
-    DrawText(TextFormat("Dựa trên: %s", source.get_title().c_str()),
-             470, 505, 16, DARKGRAY);
-    linked_list<book> suggestions = controller.get_recommended_books(source.get_author(), source.get_category(), source.get_id());
-
-    if (suggestions.get_size() == 0) {
-        DrawText("Chưa có sách cùng tác giả hoặc thể loại.", 330, 540, 17, GRAY);
-        return;
-    }
-
-    int suggestion_total = suggestions.get_size();
-    int suggestion_page_count = suggestion_total == 0 ? 1 :
-        (suggestion_total + SUGGESTIONS_PER_PAGE - 1) / SUGGESTIONS_PER_PAGE;
-    if (suggestion_page >= suggestion_page_count) {
-        suggestion_page = suggestion_page_count - 1;
-    }
-
-    node<book>* suggest = suggestions.get_head();
-    int suggestion_skip = suggestion_page * SUGGESTIONS_PER_PAGE;
-    while (suggest != nullptr && suggestion_skip-- > 0) {
-        suggest = suggest->get_next();
-    }
-
-    int suggestion_row = 0;
-    while (suggest != nullptr && suggestion_row < SUGGESTIONS_PER_PAGE)
-    {
-        book item = suggest->get_data();
-        int y = 532 + suggestion_row * 28;
-        DrawRectangle(CONTENT_X + 15, y, CONTENT_W - 30, 26, suggestion_row % 2 == 0 ? 
-            Color{239, 248, 241, 255} : Color{229, 242, 233, 255});
-        DrawText(item.get_title().c_str(), 330, y + 6, 15, DARKGRAY);
-        bool same_author = item.get_author() == source.get_author();
-        bool same_category = item.get_category() == source.get_category();
-        std::string reason = same_author && same_category ? 
-            "Cùng tác giả + thể loại" : same_author ? "Cùng tác giả" : "Cùng thể loại";
-        DrawText(reason.c_str(), 800, y + 6, 14, DARKGREEN);
-        DrawText(TextFormat("%d", item.get_quantity()),
-                 970, y + 6, 15, DARKGREEN);
-
-        if (draw_button({1030, (float)y + 1, 115, 24}, "Mượn sách", item.get_quantity() > 0 ? BLUE : GRAY) &&
-            item.get_quantity() > 0)
-        {
-            std::string book_id = item.get_id();
-
-            open_page(USER_REQUEST);
-
-            std::strncpy(field_b, book_id.c_str(), sizeof(field_b) - 1);
-            field_b[sizeof(field_b) - 1] = '\0';
-            return;
-        }
-        suggest = suggest->get_next();
-        ++suggestion_row;
-    }
-
-    if (draw_button({CONTENT_X + 230, 648, 90, 28}, "Trước", GRAY) &&
-        suggestion_page > 0) {
-        --suggestion_page;
-    }
-    if (draw_button({CONTENT_X + 550, 648, 90, 28}, "Sau", GRAY) &&
-        suggestion_page + 1 < suggestion_page_count) {
-        ++suggestion_page;
-    }
-    draw_paging_hint(suggestion_page, suggestion_total, 654,
-                     SUGGESTIONS_PER_PAGE);
+    if (draw_button({CONTENT_X + 230, (float)paging_y, 100, 36}, "Trước", GRAY) && list_page > 0) --list_page;
+    if (draw_button({CONTENT_X + 550, (float)paging_y, 100, 36}, "Sau", GRAY) && list_page + 1 < page_count) ++list_page;
+    draw_paging_hint(list_page, total, paging_y + 8, ROWS_PER_PAGE_BOOK);
 }
 
 void library_gui::draw_book_form(bool editing) {

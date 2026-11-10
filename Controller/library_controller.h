@@ -64,7 +64,8 @@ public:
     linked_list<book> get_recommended_books(std::string author, std::string category, std::string exclude_book_id);
     std::string get_hot_category();
     int get_user_active_borrow_count(std::string user_id) const;
-    
+    linked_list<book> filter_books(std::string title, std::string author, std::string category);
+
     // Đã thêm tham số shelf mặc định
     bool add_new_book(std::string id, std::string title, std::string author, std::string category, int qty, int year, std::string shelf = "Chua xep ke");
     bool update_book_info(std::string old_id, book book_n);

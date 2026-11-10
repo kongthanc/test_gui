@@ -130,6 +130,18 @@ library_controller
 - `library_controller` điều phối các Service, đồng thời quản lý hàng đợi yêu cầu mượn và danh sách vị trí kệ.
 - Các Service duy trì dữ liệu trong bộ nhớ và đọc/ghi tệp tương ứng.
 
+### Xử lý ngoại lệ và dữ liệu ngày
+
+- `Model/date.cpp`: constructor `date(int, int, int)` kiểm tra `is_valid()` và ném `std::invalid_argument` nếu ngày không hợp lệ; không tự thay ngày sai bằng `01/01/2026`.
+- `GUI/library_gui.cpp`: `library_gui::read_date()` tạo đối tượng `date` trong khối `try-catch`; nếu constructor ném `std::invalid_argument`, hàm trả về `false` để GUI báo dữ liệu ngày không hợp lệ.
+- Quy ước hiện tại: Model từ chối dữ liệu ngày không hợp lệ bằng exception; GUI bắt exception tại luồng nhập liệu. Cần tiếp tục rà soát các nơi khác khởi tạo `date` để bảo đảm exception được xử lý phù hợp.
+- Đây là mô tả theo source; chưa có kết quả kiểm thử runtime cho các trường hợp ngày sai/ngày nhuận trong lần rà soát này.
+
+### Quy tắc vẽ Login khi dùng Camera2D
+
+- `GUI/login.cpp`, hàm `login_screen::draw_input_box()` chuyển tọa độ khung cắt từ World Space sang Screen Space bằng `GetWorldToScreen2D(..., ui_layout::camera())` trước khi gọi `BeginScissorMode()`.
+- Quy tắc này giữ cho vùng cắt chữ đồng bộ với Camera2D khi giao diện được scale. Không tự ý bỏ `ui_layout::camera()` hoặc dùng trực tiếp tọa độ World Space cho `BeginScissorMode()`.
+
 ## 5. Các chức năng hiện có theo mã nguồn
 
 ### 5.1. Đăng nhập và phân quyền
@@ -223,7 +235,7 @@ Lưu ý:
 - Ngày trong các tệp nghiệp vụ được ghi theo dạng ngày/tháng/năm.
 - `notification.txt`: `IsRead` dùng `0` cho chưa đọc và `1` cho đã đọc.
 - `borrow.txt` có thể chứa phiếu mượn và bản ghi yêu cầu bị từ chối. Mã `REQ...` được dùng để nhận diện bản ghi yêu cầu trong một số xử lý.
-- Mật khẩu hiện được lưu trực tiếp trong `user.txt`, chưa thấy cơ chế băm mật khẩu trong phần mã đã rà soát. Không dùng dữ liệu tài khoản thật hoặc mật khẩu đang sử dụng ở nơi khác trong bộ dữ liệu mẫu.
+- Mật khẩu hiện được lưu trực tiếp trong `user.txt`. Báo cáo bàn giao xác nhận quyết định không triển khai Hash Password trong phạm vi hiện tại. Không dùng dữ liệu tài khoản thật hoặc mật khẩu đang sử dụng ở nơi khác trong bộ dữ liệu mẫu.
 
 ## 7. Backlog ưu tiên tiếp theo
 

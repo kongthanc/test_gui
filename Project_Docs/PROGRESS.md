@@ -1,7 +1,7 @@
 # Tiến độ dự án PBL2
 
-> Cập nhật ngày 08/11/2026 theo kết quả kiểm thử do người dùng báo cáo. Đây là kiểm thử thủ công trên bản chạy của người dùng; trong phiên này chưa có ZIP/source mới để đối chiếu commit hoặc kiểm thử độc lập.
-> `[x]` = đã được người dùng xác nhận qua kiểm thử phù hợp; `[~]` = đã có mã nguồn/chỉnh sửa nhưng chưa xác minh đầy đủ; `[ ]` = chưa thực hiện hoặc chưa kiểm thử.
+> Cập nhật ngày 10/11/2026 theo ZIP source và báo cáo bàn giao kỹ thuật. Các thay đổi source trong phiên 10/11 được đối chiếu trực tiếp trong ZIP; chưa có kết quả build hoặc kiểm thử runtime độc lập từ môi trường trợ lý.
+> `[x]` = đã được xác nhận qua kiểm thử phù hợp; `[~]` = đã có mã nguồn/chỉnh sửa nhưng chưa xác minh đầy đủ; `[ ]` = chưa thực hiện hoặc chưa kiểm thử.
 
 ## 1. Trạng thái tổng quan
 
@@ -9,7 +9,8 @@
 - Các tầng Model, Service, Controller, cấu trúc dữ liệu và thuật toán được tổ chức riêng.
 - Dữ liệu được lưu bằng các tệp trong `Data/`.
 - Chưa có bằng chứng về bộ kiểm thử tự động hoặc kiểm thử toàn hệ thống.
-- Trong phiên 08/11, người dùng đã chạy kiểm thử thủ công các trường hợp liên quan đến yêu cầu mượn, thao tác sách/tài khoản và hàng đợi. Không có thay đổi source nào được thực hiện trong phiên này.
+- Trong phiên 08/11, người dùng đã chạy kiểm thử thủ công các trường hợp liên quan đến yêu cầu mượn, thao tác sách/tài khoản và hàng đợi.
+- Trong phiên 10/11, ZIP source có các thay đổi về Undo User/Borrow, validation ngày, thông báo lỗi tạo phiếu mượn và responsive Login. Các thay đổi này được xác nhận ở mức source, chưa có kết quả kiểm thử runtime trong phiên cập nhật tài liệu.
 
 ## 2. Chức năng và trạng thái kiểm thử
 
@@ -120,14 +121,52 @@ Kịch bản đề xuất, chưa thực hiện:
 - [ ] Tra cứu người dùng và hiển thị sách người đó đang mượn cùng trạng thái `Dang muon`/`Qua han`.
 - [ ] Hiển thị đúng nguyên nhân khi đăng ký mượn trùng.
 - [ ] Build/chạy và hoàn thiện layout toàn cửa sổ ở nhiều kích thước.
-- [ ] Kiểm thử ngày sai, ngày nhuận và rà soát cách xử lý ngày dự phòng.
-- [ ] Sửa/kiểm thử bộ nhập đăng nhập để giữ nguyên chuỗi Telex ASCII.
+- [ ] Kiểm thử ngày sai, ngày nhuận và rà soát các luồng khởi tạo `date`.
+- [ ] Kiểm thử Undo User (ADD/UPDATE/DELETE) và Undo Borrow (ADD/DELETE), bao gồm đồng bộ dữ liệu sau Undo.
+- [ ] Kiểm thử responsive Login ở nhiều kích thước cửa sổ.
 - [ ] Kiểm thử toàn bộ luồng trên GUI với cả ba vai trò.
 - [ ] Kiểm tra nhất quán giữa `request.txt`, `borrow.txt` và thông báo sau lỗi/thoát đột ngột.
-- [ ] Triển khai Undo người dùng và Undo phiếu mượn.
-- [ ] Rà soát quyền ở Controller/Service và bảo vệ mật khẩu.
+- [ ] Rà soát quyền ở Controller/Service.
+- [ ] Hash Password: không triển khai theo quyết định hiện tại; chỉ xem xét lại nếu có yêu cầu thay đổi.
 
-## 5. Quy tắc cập nhật tiến độ và kiểm thử
+
+## 6. Cập nhật source ngày 10/11/2026
+
+Các mục dưới đây được đối chiếu trực tiếp với ZIP `PBL2_GUI_test(20261109-183056).zip`. Trạng thái `[~]` nghĩa là có mã nguồn nhưng chưa xác minh bằng build/kiểm thử runtime trong phiên này.
+
+### Undo User
+- [~] `Controller/library_controller.cpp`: `undo_user_action()` lấy thao tác gần nhất từ `user_undo_stack`, xử lý các loại `ADD`, `DELETE`, `UPDATE` bằng `user_service`.
+- [~] `Controller/library_controller.cpp`: các luồng thêm/sửa/xóa tài khoản có push log vào `user_undo_stack`.
+- [~] `GUI/library_gui.cpp`: `draw_users()` có nút `Hoàn tác` gọi `controller.undo_user_action()`.
+
+### Undo Borrow
+- [~] `Controller/library_controller.cpp`: `borrow_book()` ghi log `ADD`; `delete_borrow()` ghi log `DELETE`; `undo_borrow_action()` xử lý các loại thao tác này.
+- [~] `Service/borrow_service.cpp`: `undo_create_borrow()` xóa phiếu đang mượn và cộng lại số lượng sách; `undo_delete_borrow()` khôi phục phiếu đã xóa.
+- [~] `GUI/library_gui.cpp`: màn hình quản lý phiếu mượn có nút `Hoàn tác` gọi `controller.undo_borrow_action()`.
+
+### Validation ngày tháng
+- [~] `Model/date.cpp`: constructor có tham số ném `std::invalid_argument` khi `is_valid()` trả về false; không còn tự gán ngày sai về `01/01/2026`.
+- [~] `GUI/library_gui.cpp`: `read_date()` bắt `std::invalid_argument` và trả về `false` khi ngày không hợp lệ.
+
+### Thông báo lỗi tạo phiếu mượn
+- [~] `Service/borrow_service.h/.cpp`: `create_borrow_ticket()` nhận `std::string& out_message`, gán lý do thất bại cho các trường hợp như mã phiếu trùng, không tìm thấy độc giả/sách, độc giả quá hạn, đạt giới hạn 7 cuốn, đã mượn sách và hết số lượng.
+- [~] `Controller/library_controller.h/.cpp`: `borrow_book()` nhận và chuyển tiếp `out_message`.
+
+### Responsive Login
+- [~] `GUI/login.cpp`: `login_screen::draw_input_box()` dùng `GetWorldToScreen2D()` để đổi tọa độ vùng cắt theo Camera2D trước khi gọi `BeginScissorMode()`.
+
+### Quyết định phạm vi
+- [x] Không triển khai Hash Password trong phạm vi hiện tại theo quyết định được ghi trong báo cáo bàn giao.
+- [x] Giữ nguyên giới hạn nhập ASCII tại Login; không mở rộng hỗ trợ gõ tiếng Việt có dấu trong phiên này.
+
+### Việc chưa xác minh
+- [ ] Build GUI từ source ZIP.
+- [ ] Kiểm thử Undo thực tế cho từng loại thao tác và trường hợp không thể Undo.
+- [ ] Kiểm thử ngày sai, ngày nhuận và các luồng khởi tạo `date` khác.
+- [ ] Kiểm thử responsive Login khi thay đổi kích thước cửa sổ.
+- [ ] Kiểm tra tính nhất quán của file dữ liệu khi Undo và khi ứng dụng bị đóng đột ngột.
+
+## 7. Quy tắc cập nhật tiến độ và kiểm thử
 
 - Chỉ đánh dấu `[x]` khi có mã nguồn và đã được kiểm tra theo luồng phù hợp.
 - Ghi rõ kết quả do người dùng báo cáo hay do kiểm thử trực tiếp trong môi trường làm việc.

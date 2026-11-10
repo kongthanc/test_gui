@@ -1,3 +1,26 @@
+## 2026-11-10 - Undo User/Borrow, validation ngày và responsive Login
+
+### Thay đổi được xác nhận trong source ZIP
+
+- `Model/date.cpp`: constructor `date(int, int, int)` kiểm tra `is_valid()` và ném `std::invalid_argument` khi ngày không hợp lệ, thay vì âm thầm thay ngày bằng `01/01/2026`.
+- `GUI/library_gui.cpp`: `library_gui::read_date()` bọc khởi tạo `date` bằng `try-catch`; bắt `std::invalid_argument` và trả về `false`.
+- `GUI/login.cpp`: `login_screen::draw_input_box()` chuyển tọa độ vùng cắt bằng `GetWorldToScreen2D()` trước khi gọi `BeginScissorMode()`, đồng bộ với Camera2D.
+- `Service/borrow_service.h/.cpp`: `create_borrow_ticket()` nhận `std::string& out_message` và trả lý do thất bại chi tiết thay vì chỉ cung cấp kết quả boolean.
+- `Controller/library_controller.h/.cpp`: `borrow_book()` nhận và chuyển tiếp `out_message`; ghi log thao tác tạo phiếu vào `borrow_undo_stack`.
+- `Controller/library_controller.cpp`: triển khai `undo_user_action()` cho thao tác ADD/DELETE/UPDATE; các luồng thêm/sửa/xóa tài khoản ghi log vào `user_undo_stack`.
+- `Service/borrow_service.h/.cpp`: bổ sung `undo_create_borrow()` và `undo_delete_borrow()`; Undo tạo phiếu sẽ cộng lại số lượng sách, Undo xóa phiếu sẽ khôi phục phiếu.
+- `Controller/library_controller.cpp` và `GUI/library_gui.cpp`: tích hợp Undo Borrow và Undo User với nút Hoàn tác tương ứng trên giao diện.
+
+### Quyết định thiết kế
+
+- Không triển khai Hash Password trong phạm vi hiện tại; mật khẩu tiếp tục được lưu dạng văn bản gốc theo báo cáo bàn giao.
+- Giữ nguyên giới hạn nhập ASCII tại màn hình Login; không triển khai hỗ trợ gõ tiếng Việt có dấu.
+
+### Trạng thái xác minh
+
+- Các thay đổi trên được xác nhận có trong source ZIP.
+- Chưa có bằng chứng build GUI hoặc kiểm thử runtime cho các thay đổi trong phiên cập nhật tài liệu này. Cần kiểm thử Undo từng loại thao tác, validation ngày, responsive Login và tính nhất quán dữ liệu sau Undo trước khi đánh dấu đã kiểm thử.
+
 # Changelog
 
 ## 2026-11-08 - Kiểm thử thủ công hàng đợi yêu cầu mượn và ràng buộc sách/tài khoản

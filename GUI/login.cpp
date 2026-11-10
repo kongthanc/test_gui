@@ -111,7 +111,28 @@ void login_screen::draw_input_box(
         {(float)x, (float)y, (float)w, (float)h},
         0.12f, 8, focused ? BLUE : LIGHTGRAY);
 
-    DrawText(value, x + 16, y + 17, 22, DARKGRAY);
+    // Đồng bộ tọa độ Camera (World) sang tọa độ màn hình (Screen) cho ScissorMode
+    // Ở Login, ta cần lùi lề phải nhiều hơn một chút (60px) để không đè lên nút HIỆN/ẨN mắt
+    Vector2 top_left = GetWorldToScreen2D(Vector2{(float)x + 16, (float)y}, ui_layout::camera());
+    Vector2 bottom_right = GetWorldToScreen2D(Vector2{(float)x + w - 60, (float)y + h}, ui_layout::camera());
+    
+    // Bắt đầu chế độ cắt với tọa độ màn hình vật lý chính xác
+    BeginScissorMode((int)top_left.x, (int)top_left.y, 
+                     (int)(bottom_right.x - top_left.x), (int)(bottom_right.y - top_left.y));
+
+    // Tính toán chiều rộng chữ để đẩy sang trái nếu chữ quá dài
+    int text_width = MeasureText(value, 22);
+    int max_visible_width = w - 76; // Đã trừ hao nút con mắt
+    int text_x = x + 16;
+    
+    if (focused && text_width > max_visible_width) {
+        text_x = x + 16 - (text_width - max_visible_width);
+    }
+
+    DrawText(value, text_x, y + 17, 22, DARKGRAY);
+    
+    // Kết thúc chế độ cắt
+    EndScissorMode();
 }
 
 void login_screen::draw() {
