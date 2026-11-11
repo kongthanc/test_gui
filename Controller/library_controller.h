@@ -86,6 +86,7 @@ public:
     node<borrow>* get_borrow_by_id(std::string id);
     linked_list<borrow> get_my_borrows(std::string user_id, bool active_only);
     void check_system_overdue(); 
+    linked_list<borrow> get_borrows_by_book(std::string book_id) const;
 
     // ================= 4. HÀNG ĐỢI ĐĂNG KÝ (QUEUE) =================
     std::string generate_request_id();

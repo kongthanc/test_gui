@@ -369,3 +369,18 @@ bool borrow_service::undo_create_borrow(std::string borrow_id, book_service& b_s
     b_service.save_data();
     return true;
 }
+
+// --- LẤY DANH SÁCH PHIẾU MƯỢN THEO MÃ SÁCH ---
+linked_list<borrow> borrow_service::get_borrows_by_book(std::string book_id) const {
+    linked_list<borrow> result;
+    node<borrow>* curr = borrow_list.get_head();
+    
+    while (curr != nullptr) {
+        borrow b = curr->get_data();
+        if (b.get_book_id() == book_id) {
+            result.push_back(b);
+        }
+        curr = curr->get_next();
+    }
+    return result;
+}

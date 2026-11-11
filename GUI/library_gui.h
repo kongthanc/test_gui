@@ -65,6 +65,11 @@ private:
     std::string notification_detail_time;
     float notification_detail_scroll = 0;
 
+    bool show_book_detail_popup = false;
+    std::string detail_book_id = "";
+    int detail_borrow_page = 1; // Phân trang cho danh sách phiếu mượn trong popup
+    void draw_book_detail_popup();
+
     void collect_text_input();
     void clear_fields();
     void switch_page(page next_page);

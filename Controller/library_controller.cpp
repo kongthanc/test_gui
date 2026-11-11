@@ -181,6 +181,11 @@ void library_controller::check_system_overdue() {
     date today(now->tm_mday, now->tm_mon + 1, now->tm_year + 1900);
     br_service.check_and_update_overdue(today);
 }
+
+linked_list<borrow> library_controller::get_borrows_by_book(std::string book_id) const {
+    return br_service.get_borrows_by_book(book_id);
+}
+
 bool library_controller::has_overdue_borrows(std::string user_id) const {
     return br_service.has_overdue_borrows(user_id);
 }

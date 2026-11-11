@@ -49,4 +49,6 @@ public:
     // --- HOÀN TÁC PHIẾU MƯỢN ---
     bool undo_delete_borrow(borrow old_borrow, book_service& b_service);
     bool undo_create_borrow(std::string borrow_id, book_service& b_service);
+
+    linked_list<borrow> get_borrows_by_book(std::string book_id) const;
 };
