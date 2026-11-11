@@ -65,10 +65,15 @@ private:
     std::string notification_detail_time;
     float notification_detail_scroll = 0;
 
+    // Trạng thái & Cache cho Popup Chi tiết sách
     bool show_book_detail_popup = false;
     std::string detail_book_id = "";
-    int detail_borrow_page = 1; // Phân trang cho danh sách phiếu mượn trong popup
-    void draw_book_detail_popup();
+    int detail_borrow_page = 1;
+    linked_list<borrow> cached_detail_borrows; // Cache danh sách lượt mượn
+    int cached_currently_borrowed_count = 0;   // Cache số lượng đang mượn
+
+    void draw_book_detail_popup();                           // Hàm nạp dữ liệu 1 lần khi mở
+    void open_book_detail_popup(const std::string& book_id); // Cắt UTF-8 an toàn
 
     void collect_text_input();
     void clear_fields();

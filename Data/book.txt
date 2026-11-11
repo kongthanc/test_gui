@@ -10,7 +10,7 @@ B009;The Pragmatic Programmer;Andrew Hunt;IT;3;1999
 B010;Python Crash Course;Eric Matthes;IT;6;2015
 B011;Code Complete;Steve McConnell;IT;1;2004
 B012;Computer Networking: A Top-Down Approach;James F. Kurose;IT;3;2016
-B013;Artificial Intelligence: A Modern Approach;Stuart Russell;IT;1;2020
+B013;Artificial Intelligence: A Modern Approach;Stuart Russell;IT;2;2020
 B014;Atomic Habits;James Clear;Kỹ năng;9;2018
 B015;7 Thói quen của người thành đạt;Stephen R. Covey;Kỹ năng;6;1989
 B016;Tư duy nhanh và chậm;Daniel Kahneman;Kỹ năng;4;2011
