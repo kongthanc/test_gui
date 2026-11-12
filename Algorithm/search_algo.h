@@ -4,7 +4,7 @@
 
 class search_algo {
 public:
-    // 1. Chuyá»ƒn chuá»—i vá» in thÆ°á»ng (Há»— trá»£ tÃ¬m kiáº¿m khÃ´ng phÃ¢n biá»‡t Hoa/ThÆ°á»ng)
+
     static std::string to_lower(std::string str) {
         std::string result;
         result.reserve(str.size());
@@ -70,7 +70,6 @@ public:
         return result;
     }
 
-    // 2. Gá»t bá» khoáº£ng tráº¯ng thá»«a á»Ÿ 2 Ä‘áº§u do ngÆ°á»i dÃ¹ng gÃµ nháº§m
     static std::string trim(std::string str) {
         if (str.empty()) return str;
         
@@ -84,7 +83,6 @@ public:
         return str.substr(start, end - start + 1);
     }
 
-    // 3. Thuáº­t toÃ¡n tÃ¬m chuá»—i con (Tráº£ vá» true náº¿u pattern náº±m trong text)
     static bool contains(std::string text, std::string pattern) {
         text = to_lower(trim(text));
         pattern = to_lower(trim(pattern));

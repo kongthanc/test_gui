@@ -12,8 +12,8 @@ private:
 
 public:
     linked_list();
-    linked_list(const linked_list<t>& other); //táº¡o danh sÃ¡ch má»›i báº±ng cÃ¡ch sao chÃ©p dá»¯ liá»‡u tá»« danh sÃ¡ch khÃ¡c.
-    linked_list<t>& operator=(const linked_list<t>& other); //sao chÃ©p dá»¯ liá»‡u khi gÃ¡n má»™t danh sÃ¡ch cÃ³ sáºµn cho danh sÃ¡ch khÃ¡c.
+    linked_list(const linked_list<t>& other); 
+    linked_list<t>& operator=(const linked_list<t>& other);
     ~linked_list();
 
     bool empty() const;

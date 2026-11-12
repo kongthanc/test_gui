@@ -6,7 +6,7 @@
 template <typename t>
 class hash_table {
 private:
-    // Khai bÃ¡o cáº¥u trÃºc node phá»¥ xá»­ lÃ½ Ä‘á»¥ng Ä‘á»™
+    
     struct hash_node {
         std::string key;
         node<t>* address;
