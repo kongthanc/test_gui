@@ -4,16 +4,13 @@
 
 class search_algo {
 public:
-
     static std::string to_lower(std::string str) {
         std::string result;
         result.reserve(str.size());
-
         for (size_t i = 0; i < str.size();) {
             unsigned char c = (unsigned char)str[i];
             unsigned int cp = 0;
             size_t bytes = 1;
-
             if (c < 0x80) {
                 cp = c;
             } else if ((c & 0xE0) == 0xC0 && i + 1 < str.size()) {
@@ -90,7 +87,7 @@ public:
         if (pattern.empty()) return true;
         if (text.length() < pattern.length()) return false;
 
-        // TrÆ°á»£t dá»c theo text Ä‘á»ƒ tÃ¬m pattern
+        // Trượt dọc theo text để tìm pattern
         for (int i = 0; i <= text.length() - pattern.length(); i++) {
             int j;
             for (j = 0; j < pattern.length(); j++) {
@@ -98,7 +95,7 @@ public:
                     break; 
                 }
             }
-            if (j == pattern.length()) return true; // Khá»›p 100%
+            if (j == pattern.length()) return true; // Khớp 100%
         }
         return false;
     }

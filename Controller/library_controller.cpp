@@ -141,7 +141,7 @@ linked_list<borrow> library_controller::filter_borrows_by_date(date start_date, 
 
 bool library_controller::borrow_book(std::string borrow_id, std::string book_id, std::string user_id, date borrow_date, date due_date, std::string& out_message) {
     if (br_service.create_borrow_ticket(borrow_id, book_id, user_id, borrow_date, due_date, b_service, u_service, out_message)) {
-        //Lưu lịch đã tạo phiếu mượn
+        // Lưu lịch sử: Đã tạo phiếu mượn
         borrow new_ticket(borrow_id, book_id, user_id, borrow_date, due_date, "Dang muon");
         borrow_undo_stack.push(action_log<borrow>(borrow_id, "ADD", new_ticket));
         return true;

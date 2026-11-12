@@ -7,7 +7,7 @@
 
 namespace {
     void append_codepoint(char* destination, int capacity, int codepoint) {
-        // Login chi chap nhan ky tu ASCII, khong nhan chu co dau tieng Viet.
+        // Login chỉ chấp nhận ký tự ASCII, không nhận chữ có dấu tiếng Việt.
         if (destination == nullptr || codepoint < 32 || codepoint > 126 ||
             (codepoint >= 0xD800 && codepoint <= 0xDFFF)) return;
 
@@ -84,7 +84,7 @@ void login_screen::handle_input() {
         return;
     }
 
-    // Doc su kien ky tu va Backspace theo dung thu tu Windows gui den cua so.
+    // Đọc sự kiện ký tự và Backspace theo đúng thứ tự Windows gửi đến cửa sổ.
     windows_text_input::input_event event;
     while (windows_text_input::pop(event)) {
         if (event.type == windows_text_input::event_type::backspace) {

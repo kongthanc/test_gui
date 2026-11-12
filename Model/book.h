@@ -33,7 +33,7 @@ public:
     book& operator--();
     book operator--(int);
 
-    // Override hÃ m thuáº§n áº£o tá»« library_entity
+    // Override hàm thuần ảo từ library_entity
     std::string get_entity_type() const override;
     std::string to_record_string() const override;
 

@@ -10,7 +10,7 @@ user_service::~user_service() {
     save_data();
 }
 
-// --- TÃ¡ch dÃ²ng tá»« user.txt (Ä‘á»‹nh dáº¡ng: ID;Name;Password;Role) ---
+// --- Tách dòng từ user.txt (định dạng: ID;Name;Password;Role) ---
 void user_service::parse_line(std::string line, user& u) {
     if (!line.empty() && line.back() == '\r') {
         line.pop_back();
@@ -26,7 +26,7 @@ void user_service::parse_line(std::string line, user& u) {
     u = user(id, name, password, role);
 }
 
-// --- 1. Äá»ŒC Dá»® LIá»†U Tá»ª FILE ---
+// --- 1. ĐỌC DỮ LIỆU TỪ FILE ---
 bool user_service::load_data() {
     std::ifstream file(data_file);
     if (!file.is_open()) return false;
@@ -40,18 +40,18 @@ bool user_service::load_data() {
         
         user_list.push_back(u);
         node<user>* new_node = user_list.get_tail(); 
-        user_index.insert(u.get_id(), new_node); // ÄÄƒng kÃ½ báº£ng bÄƒm O(1)
+        user_index.insert(u.get_id(), new_node); // Đăng ký bảng băm O(1)
     }
     file.close();
     return true;
 }
 
-// --- 2. GHI Dá»® LIá»†U XUá»NG FILE ---
+// --- 2. GHI DỮ LIỆU XUỐNG FILE ---
 bool user_service::save_data() {
     return file_helper::save_list_to_file(data_file, user_list);
 }
 
-// --- 3. XÃC THá»°C ÄÄ‚NG NHáº¬P ---
+// --- 3. XÁC THỰC ĐĂNG NHẬP ---
 user* user_service::login(std::string id, std::string password) {
     node<user>* target = user_index.find(id);
 
@@ -61,35 +61,35 @@ user* user_service::login(std::string id, std::string password) {
     if (target->get_Data().get_password() == password)
         return &target->get_Data();
 
-    return nullptr; // sai mk
+    return nullptr; // Sai mật khẩu
 }
 
-// --- Kiá»ƒm tra phÃ¢n quyá»n (Há»— trá»£ Manager > Admin > User) ---
+// --- Kiểm tra phân quyền (Hỗ trợ Manager > Admin > User) ---
 bool user_service::check_permission_level(user* u, std::string required_role) {
     if (u == nullptr) return false;
     
     std::string role = u->get_role();
-    if (role == "manager") return true; // Manager cÃ³ quyá»n tá»‘i cao
+    if (role == "manager") return true; // Manager có quyền tối cao
     if (role == "admin" && (required_role == "admin" || required_role == "user")) return true;
     if (role == "user" && required_role == "user") return true;
 
     return false;
 }
 
-// --- 4. THÃŠM NGÆ¯á»œI DÃ™NG Má»šI ---
+// --- 4. THÊM NGƯỜI DÙNG MỚI ---
 bool user_service::add_user(user new_user) {
     if (user_index.find(new_user.get_id()) != nullptr) {
-        return false; // TrÃ¹ng ID tÃ i khoáº£n
+        return false; // Trùng ID tài khoản
     }
 
     user_list.push_back(new_user);
     user_index.insert(new_user.get_id(), user_list.get_tail());
 
-    save_data(); // LÆ°u ngay xuá»‘ng file
+    save_data(); // Lưu ngay xuống file
     return true;
 }
 
-// --- 5. XÃ“A NGÆ¯á»œI DÃ™NG ---
+// --- 5. XÓA NGƯỜI DÙNG ---
 bool user_service::delete_user(std::string id) {
     node<user>* target = user_index.find(id);
     if (target == nullptr) return false;
@@ -97,11 +97,11 @@ bool user_service::delete_user(std::string id) {
     user_index.remove(id);
     user_list.remove_node(target); 
 
-    save_data(); // LÆ°u ngay xuá»‘ng file
+    save_data(); // Lưu ngay xuống file
     return true;
 }
 
-// --- 6. Cáº¬P NHáº¬T THÃ”NG TIN NGÆ¯á»œI DÃ™NG ---
+// --- 6. CẬP NHẬT THÔNG TIN NGƯỜI DÙNG ---
 bool user_service::update_user(std::string old_id, user new_data) {
     node<user>* target = user_index.find(old_id);
     if (target == nullptr) return false;
@@ -118,11 +118,11 @@ bool user_service::update_user(std::string old_id, user new_data) {
         target->set_data(new_data);
     }
 
-    save_data(); // LÆ°u ngay xuá»‘ng file
+    save_data(); // Lưu ngay xuống file
     return true;
 }
 
-// --- 7. TRA Cá»¨U NHANH THEO ID ---
+// --- 7. TRA CỨU NHANH THEO ID ---
 node<user>* user_service::get_user_by_id(std::string id) {
     return user_index.find(id);
 }

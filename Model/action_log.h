@@ -3,13 +3,13 @@
 #include <string>
 #include "library_entity.h"
 
-// Class Template Action Log dÃ¹ng chung cho má»i Ä‘á»‘i tÆ°á»£ng T (book, user, borrow...)
+// Class Template Action Log dùng chung cho mọi đối tượng T (book, user, borrow...)
 template <typename T>
 class action_log {
 private:
-    std::string target_id;    // MÃ£ cá»§a Ä‘á»‘i tÆ°á»£ng bá»‹ tÃ¡c Ä‘á»™ng (VD: B001, US02, BR05)
-    std::string action_type;  // Loáº¡i hÃ nh Ä‘á»™ng: "ADD", "DELETE", "UPDATE"
-    T backup_data;            // Báº£n sao lÆ°u dá»¯ liá»‡u trÆ°á»›c khi thay Ä‘á»•i
+    std::string target_id;    // Mã của đối tượng bị tác động (VD: B001, US02, BR05)
+    std::string action_type;  // Loại hành động: "ADD", "DELETE", "UPDATE"
+    T backup_data;            // Bản sao lưu dữ liệu trước khi thay đổi
 
 public:
     action_log() : target_id(""), action_type(""), backup_data() {}

@@ -127,7 +127,7 @@ namespace {
             }
             if (!valid) { ++i; continue; }
 
-            // Bo qua ky tu dieu khien, nhung van giu dau cach.
+            // Bỏ qua ký tự điều khiển, nhưng vẫn giữ dấu cách.
             if (count == 1 && first < 32) {
                 ++i;
                 continue;
@@ -257,14 +257,14 @@ void library_gui::switch_page(page next_page) {
     clear_fields();
 }
 
-// Di vao trang con (them/sua/xoa...): nho trang hien tai de nut "Quay lai" tro ve dung buoc truoc.
+// Đi vào trang con (thêm/sửa/xóa...): nhớ trang hiện tại để nút "Quay lại" trở về đúng bước trước.
 void library_gui::open_page(page next_page) {
     if (next_page == current_page) return;
     history.push_back(current_page);
     switch_page(next_page);
 }
 
-// Chon muc tu menu ben trai: bat dau mot luong moi, "Quay lai" se ve Tong quan.
+// Chọn mục từ menu bên trái: bắt đầu một luồng mới, "Quay lại" sẽ về Tổng quan.
 void library_gui::open_root_page(page next_page) {
     history.clear();
     if (next_page != DASHBOARD) history.push_back(DASHBOARD);
@@ -317,12 +317,12 @@ void library_gui::ask_confirm_input(
 void library_gui::draw_confirm_dialog() {
     if (!confirm_open) return;
 
-    // Hop thoai tu xu ly nut cua no, nen mo khoa dau vao cho no.
-    // Frame vua mo thi van khoa de cu click mo hop thoai khong bi tinh la "Xac nhan".
+    // Hộp thoại tự xử lý nút của nó, nên mở khóa đầu vào cho nó.
+    // Frame vừa mở thì vẫn khóa để cú click mở hộp thoại không bị tính là "Xác nhận".
     input_locked = confirm_just_opened;
     confirm_just_opened = false;
 
-    // Thu thap ban phim sau khi mo khoa dau vao cua hop thoai.
+    // Thu thập bàn phím sau khi mở khóa đầu vào của hộp thoại.
     collect_text_input();
 
     DrawRectangle(0, 0, WINDOW_W, WINDOW_H, {0, 0, 0, 130});
@@ -341,7 +341,7 @@ void library_gui::draw_confirm_dialog() {
     DrawRectangle((int)box.x + 28, (int)box.y + 60,
                   (int)box.width - 56, 2, LIGHTGRAY);
 
-    // Tach noi dung theo dau xuong dong.
+    // Tách nội dung theo dấu xuống dòng.
     std::string line;
     int line_index = 0;
 
@@ -357,7 +357,7 @@ void library_gui::draw_confirm_dialog() {
     }
 
     if (confirm_input_enabled) {
-        // Dat o nhap ben duoi toan bo noi dung, tranh de len thong tin yeu cau.
+        // Đặt ô nhập bên dưới toàn bộ nội dung, tránh đè lên thông tin yêu cầu.
         draw_input(
             {box.x + 28, box.y + 220, box.width - 56, 44},
             "Lý do từ chối",
@@ -365,7 +365,7 @@ void library_gui::draw_confirm_dialog() {
             sizeof(field_g)
         );
 
-        // Hien thi loi nhap lieu ngay trong hop thoai.
+        // Hiển thị lỗi nhập liệu ngay trong hộp thoại.
         if (!confirm_error.empty()) {
             DrawText(confirm_error.c_str(),
                      (int)box.x + 28, (int)box.y + 275,
@@ -385,7 +385,7 @@ void library_gui::draw_confirm_dialog() {
 
     if (confirmed) {
         if (confirm_input_enabled && is_blank(field_g)) {
-            // Khong dong hop thoai neu chua nhap ly do.
+            // Không đóng hộp thoại nếu chưa nhập lý do.
             confirm_error = "Vui lòng nhập lý do từ chối.";
             return;
         }
@@ -462,7 +462,7 @@ void library_gui::collect_text_input() {
 
     bool control = IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL);
 
-    // Paste UTF-8 truc tiep tu clipboard.
+    // Dán UTF-8 trực tiếp từ clipboard.
     if (control && IsKeyPressed(KEY_V)) {
         const char* clipboard = GetClipboardText();
         if (clipboard != nullptr) {
@@ -471,7 +471,7 @@ void library_gui::collect_text_input() {
         return;
     }
 
-    // Xu ly su kien theo dung thu tu Windows gui, tranh mat thu tu Telex.
+    // Xử lý sự kiện theo đúng thứ tự Windows gửi, tránh mất thứ tự Telex.
     windows_text_input::input_event event;
     while (windows_text_input::pop(event)) {
         if (event.type == windows_text_input::event_type::backspace) {
@@ -1926,7 +1926,7 @@ void library_gui::draw_notifications() {
     int end = std::min(start + 5, total);
 
     for (int i = start; i < end; ++i) {
-        // Hien thi thong bao moi nhat truoc.
+        // Hiển thị thông báo mới nhất trước.
         notification item = records[total - 1 - i];
 
         int y = 215 + (i - start) * 76;
@@ -1952,7 +1952,7 @@ void library_gui::draw_notifications() {
             360, y + 8, 18, DARKBLUE
         );
 
-        // Rut gon noi dung tren danh sach, chi xem day du khi mo chi tiet.
+        // Rút gọn nội dung trên danh sách, chỉ xem đầy đủ khi mở chi tiết.
         std::string content = item.get_content();
 
         if (content.size() > 95) {
@@ -1964,7 +1964,7 @@ void library_gui::draw_notifications() {
             360, y + 34, 15, DARKGRAY
         );
 
-        // Tang kich thuoc va can giua thoi gian theo chieu doc cua the.
+        // Tăng kích thước và căn giữa thời gian theo chiều dọc của thẻ.
         DrawText(
             item.get_created_at().c_str(),
             1000, y + 23, 18, GRAY
@@ -1972,7 +1972,7 @@ void library_gui::draw_notifications() {
 
         Vector2 mouse = ui_layout::mouse_position();
 
-        // Nhan vao thong bao de mo noi dung chi tiet.
+        // Nhấn vào thông báo để mở nội dung chi tiết.
         if (!notification_detail_open &&
             !input_locked &&
             CheckCollisionPointRec(mouse, card) &&
@@ -1985,7 +1985,7 @@ void library_gui::draw_notifications() {
             notification_detail_scroll = 0;
             notification_detail_open = true;
 
-            // Danh dau da doc khi nguoi dung mo thong bao.
+            // Đánh dấu đã đọc khi người dùng mở thông báo.
             if (!item.get_is_read()) {
                 controller.mark_notification_read(item.get_id());
                 set_message("Đã đánh dấu thông báo là đã đọc.");
@@ -2000,7 +2000,7 @@ void library_gui::draw_notifications() {
         );
     }
 
-    // Phan trang danh sach thong bao.
+    // Phân trang danh sách thông báo.
     if (draw_button({CONTENT_X + 230, 615, 110, 40}, "Trước", GRAY)
         && list_page > 0 && !notification_detail_open) {
         --list_page;
@@ -2013,17 +2013,17 @@ void library_gui::draw_notifications() {
 
     draw_paging_hint(list_page, total, 625, 5);
 
-    // Hien thi hop thoai chi tiet thong bao.
+    // Hiển thị hộp thoại chi tiết thông báo.
     if (notification_detail_open)
     {
         float screen_w = (float)WINDOW_W;
         float screen_h = (float)WINDOW_H;
 
-        // Gioi han kich thuoc hop thoai, khong de tran khoi man hinh.
+        // Giới hạn kích thước hộp thoại, không để tràn khỏi màn hình.
         float box_w = std::min(820.0f, screen_w * 0.72f);
         float box_h = std::min(560.0f, screen_h * 0.75f);
 
-        // Can giua hop thoai theo kich thuoc cua so.
+        // Căn giữa hộp thoại theo kích thước cửa sổ.
         Rectangle box = {
             (screen_w - box_w) / 2,
             (screen_h - box_h) / 2,
@@ -2037,7 +2037,7 @@ void library_gui::draw_notifications() {
         DrawRectangleRounded(box, 0.05f, 10, WHITE);
         DrawRectangleRoundedLines(box, 0.05f, 10, DARKBLUE);
 
-        // Tieu de thong bao.
+        // Tiêu đề thông báo.
         DrawText(
             notification_detail_title.c_str(),
             (int)box.x + 30, (int)box.y + 25,
@@ -2047,7 +2047,7 @@ void library_gui::draw_notifications() {
             (int)box.x + 30, (int)box.y + 75,
             (int)box.width - 60, 2, LIGHTGRAY);
 
-        // Thoi gian thong bao.
+        // Thời gian thông báo.
         DrawText(
             notification_detail_time.c_str(),
             (int)box.x + 30, (int)box.y + 95,
@@ -2058,7 +2058,7 @@ void library_gui::draw_notifications() {
             (int)box.x + 30, (int)box.y + 135,
             22, DARKBLUE);
 
-        // Tach phan ly do thanh mot dong rieng khi hien thi.
+        // Tách phần lý do thành một dòng riêng khi hiển thị.
         std::string display_content = notification_detail_content;
 
         size_t reason_pos = display_content.find("Lý do:");
@@ -2071,14 +2071,14 @@ void library_gui::draw_notifications() {
             }
         }
 
-        // Khu vuc hien thi noi dung co the cuon.
+        // Khu vực hiển thị nội dung có thể cuộn.
         Rectangle view = {
             box.x + 30,
             box.y + 170,
             box.width - 60,
             box.height - 270};
 
-        // Chia noi dung thanh cac dong dua theo chieu rong hien thi.
+        // Chia nội dung thành các dòng dựa theo chiều rộng hiển thị.
         std::vector<std::string> lines;
         std::string paragraph;
 
@@ -2142,7 +2142,7 @@ void library_gui::draw_notifications() {
             }
         }
 
-        // Tinh gioi han cuon theo tong chieu cao noi dung.
+        // Tính giới hạn cuộn theo tổng chiều cao nội dung.
         float line_height = 32;
         float content_height = (float)lines.size() * line_height;
 
@@ -2152,7 +2152,7 @@ void library_gui::draw_notifications() {
 
         Vector2 mouse = ui_layout::mouse_position();
 
-        // Chi cuon khi chuot nam trong khu vuc noi dung.
+        // Chỉ cuộn khi chuột nằm trong khu vực nội dung.
         if (CheckCollisionPointRec(mouse, view))
         {
             notification_detail_scroll -= GetMouseWheelMove() * 40;
@@ -2162,7 +2162,7 @@ void library_gui::draw_notifications() {
             0.0f,
             std::min(notification_detail_scroll, max_scroll));
 
-        // Gioi han vung ve de chu khong tran khoi hop thoai.
+        // Giới hạn vùng vẽ để chữ không tràn khỏi hộp thoại.
         BeginScissorMode(
             (int)view.x, (int)view.y,
             (int)view.width, (int)view.height);
@@ -2184,7 +2184,7 @@ void library_gui::draw_notifications() {
             (int)(box.y + box.height - 75),
             15, GRAY);
 
-        // Nut dong luon nam o giua phia duoi hop thoai.
+        // Nút đóng luôn nằm ở giữa phía dưới hộp thoại.
         if (draw_button(
                 {box.x + (box.width - 200) / 2,
                  box.y + box.height - 55,
@@ -2341,7 +2341,7 @@ void library_gui::draw(const std::string& role) {
 
     BeginMode2D(ui_layout::camera());
 
-    // Khi hop thoai xac nhan dang mo, khoa moi thao tac o phia sau.
+    // Khi hộp thoại xác nhận đang mở, khóa mọi thao tác ở phía sau.
     input_locked = confirm_open || notification_detail_open || show_book_detail_popup;
 
     collect_text_input();
