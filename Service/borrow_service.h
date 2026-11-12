@@ -51,4 +51,7 @@ public:
     bool undo_create_borrow(std::string borrow_id, book_service& b_service);
 
     linked_list<borrow> get_borrows_by_book(std::string book_id) const;
+
+    void cascade_book_id(const std::string& old_id, const std::string& new_id);
+    void cascade_user_id(const std::string& old_id, const std::string& new_id);
 };

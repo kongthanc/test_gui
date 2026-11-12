@@ -68,7 +68,7 @@ public:
 
     // Đã thêm tham số shelf mặc định
     bool add_new_book(std::string id, std::string title, std::string author, std::string category, int qty, int year, std::string shelf = "Chua xep ke");
-    bool update_book_info(std::string old_id, book book_n);
+    bool update_book_info(std::string old_id, book book_n,std::string new_shelf = "");
     bool delete_book(std::string id);
     node<book>* get_book_by_id(std::string id);
     bool has_pending_request_for_book(std::string book_id);

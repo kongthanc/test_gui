@@ -892,10 +892,13 @@ void library_gui::draw_book_form(bool editing) {
                         "Cập nhật", ORANGE,
                         [this, old_id, new_id, title, author, category, quantity, year, shelf]() {
                 book replacement(new_id, title, author, category, quantity, year);
-                if (controller.update_book_info(old_id, replacement)) {
+                if (controller.update_book_info(old_id, replacement, shelf))
+                {
                     set_message("Đã cập nhật thông tin sách.");
-                    clear_fields(); // Dòng này sẽ xóa cả field_h
-                } else {
+                    clear_fields();
+                }
+                else
+                {
                     set_message("Không thể cập nhật sách. Vui lòng kiểm tra lại mã sách và dữ liệu.", true);
                 }
             });
@@ -1990,6 +1993,7 @@ void library_gui::draw_notifications() {
                 controller.mark_notification_read(item.get_id());
                 set_message("Đã đánh dấu thông báo là đã đọc.");
             }
+            return;
         }
     }
 

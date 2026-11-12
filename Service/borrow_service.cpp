@@ -1,4 +1,3 @@
-
 #include "borrow_service.h"
 
 borrow_service::borrow_service(std::string filename) {
@@ -7,7 +6,7 @@ borrow_service::borrow_service(std::string filename) {
 }
 
 borrow_service::~borrow_service() {
-    save_data(); // Tự động đồng bộ file khi thoát
+    save_data();
 }
 
 // --- Tách dòng từ borrow.txt (Định dạng: BorrowID;BookID;UserID;BorrowDate;DueDate;Status) ---
@@ -25,19 +24,33 @@ void borrow_service::parse_line(std::string line, borrow& b) {
     std::getline(ss, due_date_str, ';');
     std::getline(ss, status, ';');
 
-    int d1 = 1, m1 = 1, y1 = 2026;
-    char slash = '/';
-    std::stringstream ss_b(search_algo::trim(b_date_str));
-    ss_b >> d1 >> slash >> m1 >> slash >> y1;
-    date borrow_date(d1, m1, y1);
+    auto safe_parse_date = [](const std::string& str) -> date {
+        int d = 1, m = 1, y = 2026;
+        char s1 = '/', s2 = '/';
+        std::stringstream ss_d(search_algo::trim(str));
+        if (ss_d >> d >> s1 >> m >> s2 >> y) {
+            try {
+                return date(d, m, y);
+            } catch (...) {}
+        }
+        return date(1, 1, 2026);
+    };
 
-    int d2 = 1, m2 = 1, y2 = 2026;
-    std::stringstream ss_d(search_algo::trim(due_date_str));
-    ss_d >> d2 >> slash >> m2 >> slash >> y2;
-    date due_date(d2, m2, y2);
+    date borrow_date = safe_parse_date(b_date_str);
+    date due_date = safe_parse_date(due_date_str);
+    if (due_date < borrow_date) {
+        due_date = borrow_date;
+    }
 
-    b = borrow(search_algo::trim(id), search_algo::trim(book_id), 
-               search_algo::trim(user_id), borrow_date, due_date, search_algo::trim(status));
+    std::string st = file_helper::sanitize(status);
+    if (st != "Dang muon" && st != "Da tra" && st != "Qua han" && st != "Tu choi") {
+        st = "Da tra";
+    }
+
+    b = borrow(file_helper::sanitize(id),
+               file_helper::sanitize(book_id),
+               file_helper::sanitize(user_id),
+               borrow_date, due_date, st);
 }
 
 // --- 1. ĐỌC DỮ LIỆU TỪ FILE ---
@@ -47,14 +60,16 @@ bool borrow_service::load_data() {
 
     std::string line;
     while (std::getline(file, line)) {
-        if (line.empty()) continue;
-        
+        if (search_algo::trim(line).empty()) continue;
+
         borrow b;
         parse_line(line, b);
-        
+        if (b.get_id().empty() || b.get_book_id().empty() || b.get_user_id().empty()) continue;
+        if (borrow_index.find(b.get_id()) != nullptr) continue;
+
         borrow_list.push_back(b);
-        node<borrow>* new_node = borrow_list.get_tail(); 
-        borrow_index.insert(b.get_id(), new_node); // Đăng ký bảng băm O(1)
+        node<borrow>* new_node = borrow_list.get_tail();
+        borrow_index.insert(b.get_id(), new_node);
     }
     file.close();
     return true;
@@ -65,8 +80,19 @@ bool borrow_service::save_data() {
     return file_helper::save_list_to_file(data_file, borrow_list);
 }
 
-// --- 3. TẠO PHIẾU MƯỢN SÁCH (Dùng toán tử --) ---
-bool borrow_service::create_borrow_ticket(std::string borrow_id, std::string book_id, std::string user_id, date borrow_date, date due_date, book_service& b_service, user_service& u_service, std::string& out_message) {
+bool borrow_service::create_borrow_ticket(
+    std::string borrow_id, std::string book_id, std::string user_id,
+    date borrow_date, date due_date, book_service& b_service,
+    user_service& u_service, std::string& out_message) {
+
+    borrow_id = file_helper::sanitize(borrow_id);
+    book_id = file_helper::sanitize(book_id);
+    user_id = file_helper::sanitize(user_id);
+
+    if (borrow_id.empty()) {
+        out_message = "Mã phiếu mượn không hợp lệ.";
+        return false;
+    }
     if (borrow_index.find(borrow_id) != nullptr) {
         out_message = "Mã phiếu mượn đã tồn tại.";
         return false;
@@ -106,23 +132,27 @@ bool borrow_service::create_borrow_ticket(std::string borrow_id, std::string boo
     borrow new_ticket(borrow_id, book_id, user_id, borrow_date, due_date, "Dang muon");
     borrow_list.push_back(new_ticket);
     borrow_index.insert(borrow_id, borrow_list.get_tail());
-    save_data();
-    b_service.save_data();
-    
+
+    if (!save_data() || !b_service.save_data()) {
+        out_message = "Không thể lưu dữ liệu xuống ổ đĩa.";
+        return false;
+    }
+
     out_message = "Tạo phiếu mượn thành công.";
     return true;
 }
 
 // --- 4. TRẢ SÁCH (Dùng toán tử ++) ---
 bool borrow_service::return_book(std::string borrow_id, book_service& b_service) {
+    borrow_id = file_helper::sanitize(borrow_id);
     node<borrow>* ticket_node = borrow_index.find(borrow_id);
     if (ticket_node == nullptr) return false;
-    
-    // Lấy tham chiếu trực tiếp đến đối tượng borrow nằm bên trong node
+
     borrow& ticket = ticket_node->get_Data();
-    
-    // Nếu sách đã trả rồi thì không xử lý nữa
-    if (ticket.get_status() == "Da tra") return false;
+    std::string st = ticket.get_status();
+
+    // Chỉ cho phép xác nhận trả đối với sách đang thực sự được mượn hoặc quá hạn
+    if (st != "Dang muon" && st != "Qua han") return false;
 
     // Cập nhật trạng thái phiếu thành "Da tra"
     ticket.set_status("Da tra");
@@ -130,18 +160,11 @@ bool borrow_service::return_book(std::string borrow_id, book_service& b_service)
     // Hoàn lại số lượng sách vào kho (+1)
     node<book>* book_node = b_service.get_book_by_id(ticket.get_book_id());
     if (book_node != nullptr) {
-        // Lấy tham chiếu trực tiếp đến đối tượng book trong node kho sách
-        book& target_book = book_node->get_Data(); 
-        
-        // DÙNG TOÁN TỬ ++ ĐỂ HOÀN KHO TRỰC TIẾP TRÊN RAM
-        ++target_book; 
+        book& target_book = book_node->get_Data();
+        ++target_book;
     }
 
-    // Tự động lưu ngay xuống file
-    save_data();
-    b_service.save_data();
-
-    return true;
+    return save_data() && b_service.save_data();
 }
 
 // --- 5. TỰ ĐỘNG KIỂM TRA QUÁ HẠN ---
@@ -165,7 +188,7 @@ void borrow_service::check_and_update_overdue(date current_date) {
 
 // --- 7. TRA CỨU NHANH THEO ID ---
 node<borrow>* borrow_service::get_borrow_by_id(std::string id) {
-    return borrow_index.find(id);
+    return borrow_index.find(file_helper::sanitize(id));
 }
 
 // Lọc phiếu mượn theo User
@@ -175,21 +198,12 @@ linked_list<borrow> borrow_service::get_borrows_by_user(std::string user_id, boo
     while (curr != nullptr) {
         borrow b = curr->get_data();
         if (b.get_user_id() == user_id) {
-            // active_only = true: chỉ lấy phiếu chưa trả (Dang muon hoặc Qua han)
-            // active_only = false: lấy các phiếu đã trả hoặc từ chối của User
-            if (active_only)
-            {
-                if (b.get_status() == "Dang muon" ||
-                    b.get_status() == "Qua han")
-                {
+            if (active_only) {
+                if (b.get_status() == "Dang muon" || b.get_status() == "Qua han") {
                     result.push_back(b);
                 }
-            }
-            else
-            {
-                if (b.get_status() == "Da tra" ||
-                    b.get_status() == "Tu choi")
-                {
+            } else {
+                if (b.get_status() == "Da tra" || b.get_status() == "Tu choi") {
                     result.push_back(b);
                 }
             }
@@ -211,41 +225,26 @@ linked_list<borrow> borrow_service::filter_borrows_by_date(date start_date, date
         if (borrow_date >= start_date && borrow_date <= end_date) {
             result.push_back(b);
         }
-
         curr = curr->get_next();
     }
-
     return result;
 }
 
 // --- XÓA PHIẾU MƯỢN ---
 bool borrow_service::delete_borrow_ticket(std::string borrow_id) {
-    // 1. Tìm node phiếu mượn qua bảng băm O(1)
+    borrow_id = file_helper::sanitize(borrow_id);
     node<borrow>* target = borrow_index.find(borrow_id);
-    if (target == nullptr) {
-        return false; // Không tìm thấy mã phiếu
-    }
+    if (target == nullptr) return false;
 
-    if (borrow_id.rfind("REQ", 0) == 0) {
+    std::string st = target->get_Data().get_status();
+    // Chỉ cấm xóa khi sách đang được mượn hoặc quá hạn chưa trả
+    if (st == "Dang muon" || st == "Qua han") {
         return false;
     }
 
-    // CHỈ CHO PHÉP XÓA KHI ĐÃ TRẢ SÁCH XONG! ("Da tra")
-    // Tuyệt đối không cho xóa khi "Dang muon" hoặc "Qua han" để tránh mất sách
-    if (target->get_Data().get_status() != "Da tra") {
-        return false; 
-    }
-
-    // 2. Xóa chỉ mục trên Bảng băm trước
     borrow_index.remove(borrow_id);
-
-    // 3. Xóa node khỏi Danh sách liên kết kép
     borrow_list.remove_node(target);
-
-    // Tự động lưu thay đổi
-    save_data();
-
-    return true;
+    return save_data();
 }
 
 // --- KIỂM TRA RÀNG BUỘC TOÀN VẸN ---
@@ -253,8 +252,9 @@ bool borrow_service::is_book_borrowed(std::string book_id) const {
     node<borrow>* curr = borrow_list.get_head();
     while (curr != nullptr) {
         borrow b = curr->get_data();
-        if (b.get_book_id() == book_id && b.get_status() != "Da tra") {
-            return true; // Sách đang có người mượn hoặc quá hạn
+        if (b.get_book_id() == book_id &&
+            (b.get_status() == "Dang muon" || b.get_status() == "Qua han")) {
+            return true;
         }
         curr = curr->get_next();
     }
@@ -265,23 +265,22 @@ bool borrow_service::has_active_borrows(std::string user_id) const {
     node<borrow>* curr = borrow_list.get_head();
     while (curr != nullptr) {
         borrow b = curr->get_data();
-        if (b.get_user_id() == user_id && b.get_status() != "Da tra") {
-            return true; // Người dùng còn sách chưa trả
+        if (b.get_user_id() == user_id &&
+            (b.get_status() == "Dang muon" || b.get_status() == "Qua han")) {
+            return true;
         }
         curr = curr->get_next();
     }
     return false;
 }
 
-bool borrow_service::is_user_borrowing_book(
-    std::string user_id, std::string book_id) const {
+bool borrow_service::is_user_borrowing_book(std::string user_id, std::string book_id) const {
     node<borrow>* curr = borrow_list.get_head();
     while (curr != nullptr) {
         borrow b = curr->get_data();
         if (b.get_user_id() == user_id &&
             b.get_book_id() == book_id &&
-            b.get_status() != "Da tra" &&
-            b.get_status() != "Tu choi") {
+            (b.get_status() == "Dang muon" || b.get_status() == "Qua han")) {
             return true;
         }
         curr = curr->get_next();
@@ -294,18 +293,20 @@ bool borrow_service::has_overdue_borrows(std::string user_id) const {
     while (curr != nullptr) {
         borrow b = curr->get_data();
         if (b.get_user_id() == user_id && b.get_status() == "Qua han") {
-            return true; // Đang có sách quá hạn chưa trả
+            return true;
         }
         curr = curr->get_next();
     }
     return false;
 }
+
 int borrow_service::count_active_borrows_by_user(std::string user_id) const {
     int count = 0;
     node<borrow>* curr = borrow_list.get_head();
     while (curr != nullptr) {
         borrow b = curr->get_data();
-        if (b.get_user_id() == user_id && (b.get_status() == "Dang muon" || b.get_status() == "Qua han")) {
+        if (b.get_user_id() == user_id &&
+            (b.get_status() == "Dang muon" || b.get_status() == "Qua han")) {
             count++;
         }
         curr = curr->get_next();
@@ -324,12 +325,13 @@ int borrow_service::count_borrows_by_book(std::string book_id) const {
     }
     return count;
 }
-// --- LƯU VẾT PHIẾU BỊ TỪ CHỐI VÀO LỊCH SỬ ---
+
 void borrow_service::log_rejected_request(borrow b) {
-    b.set_status("Tu choi"); // Đổi trạng thái từ "Cho duyet" sang "Tu choi"
+    if (borrow_index.find(b.get_id()) != nullptr) return;
+    b.set_status("Tu choi");
     borrow_list.push_back(b);
     borrow_index.insert(b.get_id(), borrow_list.get_tail());
-    save_data(); // Ghi ngay xuống file borrow.txt
+    save_data();
 }
 
 // --- 8. HOÀN TÁC TRẢ SÁCH / XÓA PHIẾU ---
@@ -340,9 +342,7 @@ bool borrow_service::undo_delete_borrow(borrow old_borrow, book_service& b_servi
 
     borrow_list.push_back(old_borrow);
     borrow_index.insert(old_borrow.get_id(), borrow_list.get_tail());
-
-    save_data();
-    return true;
+    return save_data();
 }
 
 // --- 9. HOÀN TÁC LẬP PHIẾU MƯỢN ---
@@ -359,22 +359,20 @@ bool borrow_service::undo_create_borrow(std::string borrow_id, book_service& b_s
     node<book>* book_node = b_service.get_book_by_id(target->get_Data().get_book_id());
     if (book_node != nullptr) {
         book& target_book = book_node->get_Data();
-        ++target_book; 
+        ++target_book;
     }
 
     borrow_index.remove(borrow_id);
     borrow_list.remove_node(target);
 
-    save_data();
-    b_service.save_data();
-    return true;
+    return save_data() && b_service.save_data();
 }
 
 // --- LẤY DANH SÁCH PHIẾU MƯỢN THEO MÃ SÁCH ---
 linked_list<borrow> borrow_service::get_borrows_by_book(std::string book_id) const {
     linked_list<borrow> result;
     node<borrow>* curr = borrow_list.get_head();
-    
+
     while (curr != nullptr) {
         borrow b = curr->get_data();
         if (b.get_book_id() == book_id) {
@@ -383,4 +381,28 @@ linked_list<borrow> borrow_service::get_borrows_by_book(std::string book_id) con
         curr = curr->get_next();
     }
     return result;
+}
+
+void borrow_service::cascade_book_id(const std::string& old_id, const std::string& new_id) {
+    if (old_id == new_id) return;
+    bool changed = false;
+    for (node<borrow>* curr = borrow_list.get_head(); curr != nullptr; curr = curr->get_next()) {
+        if (curr->get_Data().get_book_id() == old_id) {
+            curr->get_Data().set_book_id(new_id);
+            changed = true;
+        }
+    }
+    if (changed) save_data();
+}
+
+void borrow_service::cascade_user_id(const std::string& old_id, const std::string& new_id) {
+    if (old_id == new_id) return;
+    bool changed = false;
+    for (node<borrow>* curr = borrow_list.get_head(); curr != nullptr; curr = curr->get_next()) {
+        if (curr->get_Data().get_user_id() == old_id) {
+            curr->get_Data().set_user_id(new_id);
+            changed = true;
+        }
+    }
+    if (changed) save_data();
 }
