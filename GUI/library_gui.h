@@ -26,7 +26,7 @@ private:
     int list_page;
     int suggestion_page;
 
-    // Lich su cac trang da di qua, dung cho nut "Quay lai".
+    // Lịch sử các trang đã đi qua, dùng cho nút "Quay lại".
     std::vector<page> history;
 
     char field_a[96];
@@ -58,7 +58,7 @@ private:
     std::function<void()> confirm_action;
     std::string confirm_error;
 
-    // Luu thong tin thong bao dang duoc xem chi tiet.
+    // Lưu thông tin thông báo đang được xem chi tiết.
     bool notification_detail_open = false;
     std::string notification_detail_title;
     std::string notification_detail_content;
@@ -78,9 +78,9 @@ private:
     void collect_text_input();
     void clear_fields();
     void switch_page(page next_page);
-    void open_page(page next_page);      // di toi trang con, luu lai trang hien tai
-    void open_root_page(page next_page); // chon tu menu ben trai, xoa lich su
-    void go_back();                      // quay ve trang truoc do
+    void open_page(page next_page);      // Đi tới trang con, lưu lại trang hiện tại
+    void open_root_page(page next_page); // Chọn từ menu bên trái, xóa lịch sử
+    void go_back();                      // Quay về trang trước đó
     void set_message(const std::string& text, bool is_error = false);
 
     void ask_confirm(const std::string& title, const std::string& text,

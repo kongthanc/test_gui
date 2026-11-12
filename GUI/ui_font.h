@@ -2,10 +2,10 @@
 
 #include "raylib.h"
 
-// Khai bao font dung chung cho cac tep GUI.
+// Khai báo font dùng chung cho các tệp GUI.
 extern Font app_font;
 
-// He so phong to font chung cho toan bo ung dung.
+// Hệ số phóng to font chung cho toàn bộ ứng dụng.
 const float FONT_SCALE = 1.10f;
 
 inline void DrawReadableText(const char* text, int x, int y,
@@ -19,6 +19,6 @@ inline int MeasureReadableText(const char* text, int font_size) {
     return (int)size.x;
 }
 
-// Sau khi include tep nay, cac lenh DrawText va MeasureText tu dong dung Segoe UI.
+// Sau khi include tệp này, các lệnh DrawText và MeasureText tự động dùng Segoe UI.
 #define DrawText(text, x, y, font_size, color) DrawReadableText(text, x, y, font_size, color)
 #define MeasureText(text, font_size) MeasureReadableText(text, font_size)

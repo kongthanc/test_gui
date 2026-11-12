@@ -77,7 +77,7 @@ public:
     }
 };
 
-// 3. Káº¾ THá»ªA: Quyá»n Äá»™c giáº£ (User)
+// 3. KẾ THỪA: Quyền Độc giả (User)
 class reader_permission : public role_permission {
 public:
     std::string get_role_name() const override { return "user"; }
@@ -96,7 +96,7 @@ public:
     }
 };
 
-// FACTORY METHOD PATTERN: Khá»Ÿi táº¡o Ä‘á»‘i tÆ°á»£ng quyá»n háº¡n tÆ°Æ¡ng á»©ng
+// FACTORY METHOD PATTERN: Khởi tạo đối tượng quyền hạn tương ứng
 class permission_factory {
 public:
     static role_permission* create(const std::string& role_str) {
