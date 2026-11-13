@@ -975,12 +975,29 @@ void library_gui::draw_books(const std::string &role, bool user_search)
     if (total == 0)
         DrawText("Không tìm thấy sách phù hợp.", CONTENT_X + 20, table_start_y + 45, 18, RED);
 
-    int paging_y = 595;
-    if (draw_button({CONTENT_X + 230, (float)paging_y, 100, 34}, "Trước", GRAY) && list_page > 0)
-        --list_page;
-    if (draw_button({CONTENT_X + 550, (float)paging_y, 100, 34}, "Sau", GRAY) && list_page + 1 < page_count)
-        ++list_page;
-    draw_paging_hint(list_page, total, paging_y + 7, ROWS);
+    
+int paging_y = 595;
+
+// Sap xep ma sach tang dan bang Merge Sort
+if (draw_button(
+        {CONTENT_X + 15, (float)paging_y, 190, 34},
+        "Sắp xếp", BLUE))
+{
+    controller.sort_books([](book a, book b)
+                          { return a.get_id() < b.get_id(); });
+
+    need_book_refresh = true;
+    list_page = 0;
+    set_message("Đã sắp xếp mã sách tăng dần.");
+}
+
+if (draw_button({CONTENT_X + 230, (float)paging_y, 100, 34}, "Trước", GRAY) && list_page > 0)
+    --list_page;
+
+if (draw_button({CONTENT_X + 550, (float)paging_y, 100, 34}, "Sau", GRAY) && list_page + 1 < page_count)
+    ++list_page;
+
+draw_paging_hint(list_page, total, paging_y + 7, ROWS);
 }
 void library_gui::draw_book_form(bool editing)
 {

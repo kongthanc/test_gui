@@ -1,4 +1,4 @@
-b001;Công Nghệ Thông Tin;a1
+B001;IT;a1
 b002;Công Nghệ Thông Tin;a1
 b003;Kỹ năng;c1
 b004;Công Nghệ Thông Tin;a1
@@ -40,6 +40,6 @@ b039;Thiếu nhi;f1
 b040;Thiếu nhi;f1
 b041;Ngoại ngữ;f2
 b042;Ngoại ngữ;f2
-b043;Toán học;d3
 b044;Nghệ thuật;g1
-b045;Sức khỏe;g2
+B045;Sức khỏe;g2
+B043;Toán học;d3
