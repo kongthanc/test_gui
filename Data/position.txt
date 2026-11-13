@@ -1,9 +1,7 @@
 B001;IT;a1
 b002;Công Nghệ Thông Tin;a1
-b003;Kỹ năng;c1
 b004;Công Nghệ Thông Tin;a1
 b005;Tiểu thuyết;b1
-b006;Tiểu thuyết;b1
 b007;Công Nghệ Thông Tin;a1
 b008;Công Nghệ Thông Tin;a1
 b009;Công Nghệ Thông Tin;a1
@@ -43,3 +41,5 @@ b042;Ngoại ngữ;f2
 b044;Nghệ thuật;g1
 B045;Sức khỏe;g2
 B043;Toán học;d3
+B003;Kỹ năng;c1
+B006;Tiểu thuyết;b1
