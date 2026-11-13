@@ -51,6 +51,7 @@ private:
     linked_list<borrow> cached_borrows;
     linked_list<shift> cached_shifts;
     linked_list<borrow> cached_filtered_borrows;
+    linked_list<book> cached_recommended_books;
 
     bool confirm_open;
     bool confirm_just_opened;
@@ -70,6 +71,7 @@ private:
     float notification_detail_scroll = 0;
 
     bool show_book_detail_popup = false;
+    bool user_book_popup = false; 
     std::string detail_book_id = "";
     int detail_borrow_page = 1;
     linked_list<borrow> cached_detail_borrows; 
@@ -77,7 +79,7 @@ private:
 
     void draw_book_detail_popup();                           // Hàm nạp dữ liệu 1 lần khi mở
     void open_book_detail_popup(const std::string& book_id); // Cắt UTF-8 an toàn
-
+    void go_to_borrow_page(const std::string &book_id);
     void collect_text_input();
     void clear_fields();
     void switch_page(page next_page);

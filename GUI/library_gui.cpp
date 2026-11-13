@@ -276,6 +276,8 @@ void library_gui::reset()
     show_book_detail_popup = false;
     detail_book_id.clear();
     detail_borrow_page = 1;
+    user_book_popup = false;
+    suggestion_page = 0;
     cached_currently_borrowed_count = 0;
     clear_fields();
 
@@ -902,20 +904,37 @@ void library_gui::draw_books(const std::string &role, bool user_search)
         int y = table_start_y + 38 + row * 37;
         DrawRectangle(CONTENT_X + 15.0f, (float)y, CONTENT_W - 30.0f, 34.0f, row % 2 == 0 ? Color{245, 248, 252, 255} : Color{232, 239, 248, 255});
 
-        DrawText(item.get_id().c_str(), columns[0], y + 8, 16, DARKGRAY);
-        DrawText(truncate_utf8(item.get_title(), 22).c_str(), columns[1], y + 8, 15, DARKGRAY);
+        std::string title = truncate_utf8(item.get_title(), 22);
+        DrawText(item.get_id().c_str(), columns[0], y + 8, 15, DARKGRAY);
+        DrawText(title.c_str(), columns[1], y + 8, 15,
+                 user_search ? DARKBLUE : DARKGRAY);
         DrawText(truncate_utf8(item.get_author(), 18).c_str(), columns[2], y + 8, 15, DARKGRAY);
         DrawText(item.get_category().c_str(), columns[3], y + 8, 15, DARKGRAY);
         DrawText(TextFormat("%d", item.get_quantity()), columns[4] + 8, y + 8, 16, DARKGREEN);
 
         if (user_search)
         {
+            /// Click trực tiếp vào dòng chữ tên sách để xem chi tiết
+            if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+            {
+                Rectangle title_area = {
+                    (float)columns[1],
+                    (float)y,
+                    200,
+                    34};
+
+                if (CheckCollisionPointRec(ui_layout::mouse_position(), title_area))
+                {
+                    user_book_popup = true;
+                    open_book_detail_popup(item.get_id());
+                    return;
+                }
+            }
             bool can_b = item.get_quantity() > 0;
             if (draw_button({(float)columns[5], (float)y + 3, 105, 28}, "Mượn sách", can_b ? BLUE : GRAY) && can_b)
             {
-                std::strncpy(field_b, item.get_id().c_str(), sizeof(field_b) - 1);
-                field_b[sizeof(field_b) - 1] = '\0';
-                open_page(USER_REQUEST);
+              
+                go_to_borrow_page(item.get_id());
                 return;
             }
         }
@@ -945,6 +964,7 @@ void library_gui::draw_books(const std::string &role, bool user_search)
             }
             if (draw_button({ax + 90, (float)y + 3, 70, 28}, "Lịch sử", BLUE))
             {
+                user_book_popup = false;
                 open_book_detail_popup(item.get_id());
             }
         }
@@ -2572,7 +2592,11 @@ void library_gui::draw_book_detail_popup()
     DrawRectangle(0, 0, WINDOW_W, WINDOW_H, Color{0, 0, 0, 140});
 
     // Khung Popup chính
-    Rectangle box = {(WINDOW_W - 740) / 2.0f, (WINDOW_H - 520) / 2.0f, 740, 520};
+    Rectangle box = {
+        (WINDOW_W - 900) / 2.0f,
+        (WINDOW_H - 650) / 2.0f,
+        900,
+        650};
     DrawRectangleRounded(box, 0.04f, 8, WHITE);
     DrawRectangleRoundedLines(box, 0.04f, 8, DARKBLUE);
 
@@ -2596,13 +2620,139 @@ void library_gui::draw_book_detail_popup()
     std::string popup_author = truncate_utf8(b.get_author(), 30);
     DrawText(TextFormat("Tác giả: %s", popup_author.c_str()), (int)box.x + 28, y_info, 17, DARKGRAY);
     DrawText(TextFormat("Số lượng còn: %d", b.get_quantity()), (int)box.x + 370, y_info, 17, DARKGREEN);
-    DrawText(TextFormat("Đang mượn: %d", cached_currently_borrowed_count), (int)box.x + 570, y_info, 17, RED);
+    if (!user_book_popup)
+    {
+        DrawText(
+            TextFormat("Đang mượn: %d", cached_currently_borrowed_count),
+            (int)box.x + 570, y_info, 17, RED);
+    }
 
     // Vạch phân cách
     int y_sep = y_info + 32;
     DrawRectangle((int)box.x + 28, y_sep, (int)box.width - 56, 2, LIGHTGRAY);
 
-    DrawText("DANH SÁCH ĐỘC GIẢ ĐANG MƯỢN SÁCH NÀY:", (int)box.x + 28, y_sep + 10, 18, DARKBLUE);
+if (user_book_popup)
+{
+    // ================= SACH GOI Y CHO USER =================
+    DrawText("SÁCH CÓ THỂ BẠN QUAN TÂM:",
+             (int)box.x + 28, y_sep + 12, 20, DARKBLUE);
+
+    int table_x = (int)box.x + 28;
+    int table_y = y_sep + 48;
+    int table_w = (int)box.width - 56;
+
+    int total = cached_recommended_books.get_size();
+    int total_pages = total == 0 ? 1 :
+        (total + SUGGESTIONS_PER_PAGE - 1) / SUGGESTIONS_PER_PAGE;
+
+    if (suggestion_page < 0)
+        suggestion_page = 0;
+
+    if (suggestion_page >= total_pages)
+        suggestion_page = total_pages - 1;
+
+    if (total == 0)
+    {
+        DrawText("Chưa có sách phù hợp để gợi ý.",
+                 table_x + 15, table_y + 25, 18, GRAY);
+    }
+    else
+    {
+        node<book>* curr = cached_recommended_books.get_head();
+
+        int skip = suggestion_page * SUGGESTIONS_PER_PAGE;
+
+        while (curr != nullptr && skip > 0)
+        {
+            curr = curr->get_next();
+            skip--;
+        }
+
+        for (int i = 0;
+             curr != nullptr && i < SUGGESTIONS_PER_PAGE;
+             i++, curr = curr->get_next())
+        {
+            book item = curr->get_data();
+
+            int row_y = table_y + i * 75;
+
+            DrawRectangle(
+                table_x, row_y, table_w, 68,
+                i % 2 == 0
+                    ? Color{245, 248, 252, 255}
+                    : Color{232, 239, 248, 255}
+            );
+
+            // Ten sach
+            std::string title = truncate_utf8(item.get_title(), 42);
+            DrawText(title.c_str(),
+                     table_x + 15, row_y + 7, 18, DARKBLUE);
+
+            // Tac gia va the loai
+            std::string author = truncate_utf8(item.get_author(), 25);
+
+            DrawText(
+                TextFormat("Tác giả: %s", author.c_str()),
+                table_x + 15, row_y + 37, 15, DARKGRAY
+            );
+
+            DrawText(
+                TextFormat("Còn: %d", item.get_quantity()),
+                table_x + 390, row_y + 37, 15, DARKGREEN
+            );
+
+            // Xem chi tiet sach goi y
+            if (draw_button(
+                    {(float)table_x + 550, (float)row_y + 17, 100, 34},
+                    "Xem sách", BLUE))
+            {
+                open_book_detail_popup(item.get_id());
+                return;
+            }
+
+            // Muon sach
+            bool can_borrow = item.get_quantity() > 0;
+
+            if (draw_button(
+                    {(float)table_x + 665, (float)row_y + 17, 120, 34},
+                    "Mượn sách",
+                    can_borrow ? BLUE : GRAY) && can_borrow)
+            {
+                go_to_borrow_page(item.get_id());
+                return;
+            }
+        }
+    }
+
+    // Phan trang sach goi y
+    int nav_y = (int)box.y + (int)box.height - 55;
+
+    if (total_pages > 1)
+    {
+        if (draw_button(
+                {(float)table_x, (float)nav_y, 90, 36},
+                "Trước", GRAY) && suggestion_page > 0)
+        {
+            suggestion_page--;
+        }
+
+        DrawText(
+            TextFormat("Trang %d/%d",
+                       suggestion_page + 1, total_pages),
+            table_x + 110, nav_y + 8, 17, DARKGRAY
+        );
+
+        if (draw_button(
+                {(float)table_x + 220, (float)nav_y, 90, 36},
+                "Sau", GRAY) && suggestion_page + 1 < total_pages)
+        {
+            suggestion_page++;
+        }
+    }
+}
+else
+{
+     DrawText("DANH SÁCH ĐỘC GIẢ ĐANG MƯỢN SÁCH NÀY:", (int)box.x + 28, y_sep + 10, 18, DARKBLUE);
 
     int table_y = y_sep + 38;
     int table_x = (int)box.x + 28;
@@ -2678,38 +2828,78 @@ void library_gui::draw_book_detail_popup()
         {
             detail_borrow_page++;
         }
-    }
+    }    
+}
 
-    // Nút Đóng
-    if (draw_button({box.x + box.width - 150, (float)nav_y, 120, 38}, "Đóng", RED))
-    {
-        show_book_detail_popup = false;
-    }
+
+   // Nút Đóng dùng chung
+int close_y = (int)box.y + (int)box.height - 52;
+
+if (draw_button(
+        {box.x + box.width - 150, (float)close_y, 120, 38},
+        "Đóng", RED))
+{
+    show_book_detail_popup = false;
+    user_book_popup = false;
+}
 }
 
 void library_gui::open_book_detail_popup(const std::string &book_id)
 {
     selected_book_id = book_id;
     detail_book_id = book_id;
-    detail_borrow_page = 1;
-    show_book_detail_popup = true;
+    node<book> *target = controller.get_book_by_id(book_id);
 
-    // Truy vấn dữ liệu từ Controller đúng 1 lần duy nhất khi click mở Popup
+    if (target != nullptr)
+    {
+        book selected = target->get_data();
+
+        cached_recommended_books = controller.get_recommended_books(
+            selected.get_author(),
+            selected.get_category(),
+            selected.get_id());
+    }
+    else
+    {
+        cached_recommended_books = linked_list<book>();
+    }
+    detail_borrow_page = 1;
+suggestion_page = 0;
+show_book_detail_popup = true;
+
+// Chỉ lấy lịch sử mượn khi mở popup của Admin
+if (!user_book_popup)
+{
     cached_detail_borrows = controller.get_borrows_by_book(detail_book_id);
     cached_currently_borrowed_count = 0;
 
     node<borrow> *temp = cached_detail_borrows.get_head();
+
     while (temp != nullptr)
     {
         std::string st = temp->get_data().get_status();
+
         if (st == "Dang muon" || st == "Qua han")
         {
             cached_currently_borrowed_count++;
         }
+
         temp = temp->get_next();
     }
 }
+}
+void library_gui::go_to_borrow_page(const std::string &book_id)
+{
+    show_book_detail_popup = false;
+    user_book_popup = false;
 
+    // Chuyển trang trước vì open_page() sẽ xóa các ô nhập.
+    open_page(USER_REQUEST);
+
+    // Điền mã sách sau khi chuyển trang.
+    std::strncpy(field_b, book_id.c_str(), sizeof(field_b) - 1);
+    field_b[sizeof(field_b) - 1] = '\0';
+}
 void library_gui::draw(const std::string &role)
 {
     BeginDrawing();
