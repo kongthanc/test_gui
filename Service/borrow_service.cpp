@@ -406,3 +406,27 @@ void borrow_service::cascade_user_id(const std::string& old_id, const std::strin
     }
     if (changed) save_data();
 }
+
+linked_list<borrow> borrow_service::get_all_borrows() const {
+    return borrow_list;
+}
+linked_list<borrow> borrow_service::filter_borrows(std::string id_kw, std::string book_kw, std::string user_kw, std::string status_kw) const {
+    linked_list<borrow> result;
+    node<borrow>* curr = borrow_list.get_head();
+
+    while (curr != nullptr) {
+        borrow b = curr->get_data();
+        bool match = true;
+
+        if (!id_kw.empty() && !search_algo::contains(b.get_id(), id_kw)) match = false;
+        if (!book_kw.empty() && !search_algo::contains(b.get_book_id(), book_kw)) match = false;
+        if (!user_kw.empty() && !search_algo::contains(b.get_user_id(), user_kw)) match = false;
+        if (!status_kw.empty() && !search_algo::contains(b.get_status(), status_kw)) match = false;
+
+        if (match) {
+            result.push_back(b);
+        }
+        curr = curr->get_next();
+    }
+    return result;
+}

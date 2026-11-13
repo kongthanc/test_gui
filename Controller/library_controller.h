@@ -74,10 +74,10 @@ public:
     bool has_pending_request_for_book(std::string book_id);
     bool is_book_borrowed(std::string book_id) const;
     void sort_books(bool (*cmp)(book, book));
-    
+    linked_list<borrow> get_all_borrows() const;
     // Lọc phiếu mượn
-    linked_list<borrow> filter_borrows_by_date(date start_date, date end_date);
-
+    linked_list<borrow> filter_borrows_by_date(date start_date, date end_date, std::string& out_message);
+   
     // ================= 3. NGHIỆP VỤ MƯỢN - TRẢ (BORROW) =================
     bool borrow_book(std::string borrow_id, std::string book_id, std::string user_id, 
         date borrow_date, date due_date, std::string& out_message);
@@ -87,7 +87,7 @@ public:
     linked_list<borrow> get_my_borrows(std::string user_id, bool active_only);
     void check_system_overdue(); 
     linked_list<borrow> get_borrows_by_book(std::string book_id) const;
-
+    linked_list<borrow> filter_borrows(std::string id_kw, std::string book_kw, std::string user_kw, std::string status_kw) const;
     // ================= 4. HÀNG ĐỢI ĐĂNG KÝ (QUEUE) =================
     std::string generate_request_id();
     bool register_book_request(std::string book_id, std::string user_id, date b_date, date due_date, std::string& out_message);
@@ -100,7 +100,7 @@ public:
     bool is_request_id_in_queue(std::string req_id);
 
     // ================= 5. NGHIỆP VỤ CA TRỰC (SHIFT) =================
-    bool register_shift(date d, std::string session, std::string admin_id);
+    bool register_shift(date d, std::string session, std::string admin_id, std::string& out_message);
     bool cancel_shift(date d, std::string session, std::string admin_id);
     linked_list<shift> get_my_shifts(std::string admin_id);
     long long get_admin_salary(std::string admin_id, int month = 0, int year = 0);
@@ -115,7 +115,8 @@ public:
     node<user>* get_user_by_id(std::string id);
     bool has_pending_request_for_user(std::string user_id);
     bool has_user_shifts(std::string user_id) const;
-
+    linked_list<user> get_all_users() const;
+    linked_list<user> filter_users(std::string id_kw, std::string name_kw, std::string role_kw) const;
     // ================= 7. VỊ TRÍ KỆ SÁCH =================
     std::string get_book_shelf(std::string book_id);
 

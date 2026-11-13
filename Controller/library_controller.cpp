@@ -240,7 +240,14 @@ void library_controller::sort_books(bool (*cmp)(book, book)) {
     b_service.sort_books(cmp);
 }
 
-linked_list<borrow> library_controller::filter_borrows_by_date(date start_date, date end_date) {
+linked_list<borrow> library_controller::filter_borrows_by_date(date start_date, date end_date, std::string& out_message) {
+    // Logic nghiệp vụ: Ngày kết thúc không được nhỏ hơn ngày bắt đầu nằm ở đây!
+    if (end_date < start_date) {
+        out_message = "Lỗi: Khoảng ngày lọc không hợp lệ!";
+        return linked_list<borrow>(); 
+    }
+    
+    out_message = "Đã lọc dữ liệu thành công.";
     return br_service.filter_borrows_by_date(start_date, end_date);
 }
 
@@ -298,6 +305,9 @@ bool library_controller::has_overdue_borrows(std::string user_id) const {
     return br_service.has_overdue_borrows(user_id);
 }
 
+linked_list<borrow> library_controller::get_all_borrows() const {
+    return br_service.get_all_borrows();
+}
 bool library_controller::is_request_id_in_queue(std::string req_id) {
     int size = book_request_queue.get_size();
     bool found = false;
@@ -548,8 +558,24 @@ linked_list<borrow> library_controller::get_my_pending_requests(std::string user
     return requests;
 }
 
-bool library_controller::register_shift(date d, std::string session, std::string admin_id) {
-    return s_service.register_shift(d, session, file_helper::sanitize(admin_id), u_service);
+bool library_controller::register_shift(date d, std::string session, std::string admin_id, std::string& out_message) {
+    time_t t = time(0);
+    tm* now = localtime(&t);
+    if (now != nullptr) {
+        date today(now->tm_mday, now->tm_mon + 1, now->tm_year + 1900);
+        if (d < today) {
+            out_message = "Lỗi: Không thể đăng ký ca trực trong quá khứ!";
+            return false;
+        }
+    }
+
+    if (s_service.register_shift(d, session, file_helper::sanitize(admin_id), u_service)) {
+        out_message = "Đã đăng ký ca trực thành công.";
+        return true;
+    }
+    
+    out_message = "Lỗi: Ca đầy, trùng ca hoặc mã nhân viên không hợp lệ.";
+    return false;
 }
 
 bool library_controller::cancel_shift(date d, std::string session, std::string admin_id) {
@@ -645,7 +671,9 @@ bool library_controller::delete_user(std::string id) {
 node<user>* library_controller::get_user_by_id(std::string id) {
     return u_service.get_user_by_id(file_helper::sanitize(id));
 }
-
+linked_list<user> library_controller::get_all_users() const {
+    return u_service.get_all_users();
+}
 void library_controller::load_positions() {
     std::ifstream file(position_file);
     if (!file.is_open()) {
@@ -1000,4 +1028,11 @@ int library_controller::get_unread_notification_count(std::string user_id) const
 
 bool library_controller::mark_notification_read(std::string notification_id) {
     return n_service.mark_as_read(notification_id);
+}
+linked_list<user> library_controller::filter_users(std::string id_kw, std::string name_kw, std::string role_kw) const {
+    return u_service.filter_users(id_kw, name_kw, role_kw);
+}
+
+linked_list<borrow> library_controller::filter_borrows(std::string id_kw, std::string book_kw, std::string user_kw, std::string status_kw) const {
+    return br_service.filter_borrows(id_kw, book_kw, user_kw, status_kw);
 }

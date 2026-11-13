@@ -2,15 +2,12 @@
 #define WINDOWS_TEXT_INPUT_H
 
 #ifdef _WIN32
-// Raylib phải được include trước Windows API vì hai bên có một số tên trùng nhau.
 #include "raylib.h"
 
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
 
-// Đổi tên các hàm Win32 trong lúc include Windows headers để tránh xung đột
-// với Rectangle, CloseWindow và ShowCursor của Raylib.
 #define Rectangle Win32Rectangle
 #define CloseWindow Win32CloseWindow
 #define ShowCursor Win32ShowCursor
@@ -20,7 +17,6 @@
 #undef CloseWindow
 #undef ShowCursor
 
-// Windows định nghĩa DrawText/DrawTextEx thành macro, gây xung đột với ui_font.h.
 #ifdef DrawText
 #undef DrawText
 #endif
@@ -56,7 +52,6 @@ namespace windows_text_input {
             pending_high_surrogate = value;
             return;
         }
-
         if (value >= 0xDC00 && value <= 0xDFFF) {
             if (pending_high_surrogate != 0) {
                 int codepoint = 0x10000 +
@@ -67,7 +62,6 @@ namespace windows_text_input {
             }
             return;
         }
-
         pending_high_surrogate = 0;
         push_character((int)value);
     }

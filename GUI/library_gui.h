@@ -8,14 +8,14 @@
 
 class library_gui {
 private:
-    enum page {
+   enum page {
         DASHBOARD,
-        BOOKS, BOOK_ADD, BOOK_EDIT, BOOK_DELETE,
-        BORROWS, BORROW_CREATE, BORROW_RETURN, BORROW_DELETE,
+        BOOKS, BOOK_ADD, BOOK_EDIT,
+        BORROWS, BORROW_CREATE,
         REQUESTS, BORROW_FILTER,
-        SHIFTS, SHIFT_REGISTER, SHIFT_CANCEL, SHIFT_DELETE,
+        SHIFTS, SHIFT_REGISTER,
         SALARY,
-        USERS, USER_ADD, USER_EDIT, USER_DELETE,
+        USERS, USER_ADD, USER_EDIT,
         SHELF,
         USER_SEARCH, USER_REQUEST, USER_ACTIVE_BORROWS, USER_HISTORY, USER_NOTIFICATIONS
     };
@@ -26,17 +26,10 @@ private:
     int list_page;
     int suggestion_page;
 
-    // Lịch sử các trang đã đi qua, dùng cho nút "Quay lại".
     std::vector<page> history;
 
-    char field_a[96];
-    char field_b[160];
-    char field_c[160];
-    char field_d[96];
-    char field_e[96];
-    char field_f[96];
-    char field_g[96];
-    char field_h[96];
+    char field_a[96]; char field_b[160]; char field_c[160]; char field_d[96];
+    char field_e[96]; char field_f[96]; char field_g[96]; char field_h[96];
     char* active_field;
     int active_field_capacity;
     std::string message;
@@ -44,9 +37,21 @@ private:
     bool showing_related;
     bool showing_pending_requests;
     std::string selected_book_id;
-    std::string searched_user_id; // lưu tài khoản tra cứu
+    std::string searched_user_id; 
 
-    // Hộp thoại xác nhận.
+    // ---- CỜ HIỆU TỐI ƯU TÌM KIẾM (CACHING) ----
+    bool need_book_refresh;
+    bool need_user_refresh;
+    bool need_borrow_refresh;
+    bool need_shift_refresh;
+    bool need_borrow_filter_refresh;
+
+    linked_list<book> cached_books;
+    linked_list<user> cached_users;
+    linked_list<borrow> cached_borrows;
+    linked_list<shift> cached_shifts;
+    linked_list<borrow> cached_filtered_borrows;
+
     bool confirm_open;
     bool confirm_just_opened;
     bool input_locked;
@@ -58,19 +63,17 @@ private:
     std::function<void()> confirm_action;
     std::string confirm_error;
 
-    // Lưu thông tin thông báo đang được xem chi tiết.
     bool notification_detail_open = false;
     std::string notification_detail_title;
     std::string notification_detail_content;
     std::string notification_detail_time;
     float notification_detail_scroll = 0;
 
-    // Trạng thái & Cache cho Popup Chi tiết sách
     bool show_book_detail_popup = false;
     std::string detail_book_id = "";
     int detail_borrow_page = 1;
-    linked_list<borrow> cached_detail_borrows; // Cache danh sách lượt mượn
-    int cached_currently_borrowed_count = 0;   // Cache số lượng đang mượn
+    linked_list<borrow> cached_detail_borrows; 
+    int cached_currently_borrowed_count = 0;
 
     void draw_book_detail_popup();                           // Hàm nạp dữ liệu 1 lần khi mở
     void open_book_detail_popup(const std::string& book_id); // Cắt UTF-8 an toàn

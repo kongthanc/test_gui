@@ -126,3 +126,27 @@ bool user_service::update_user(std::string old_id, user new_data) {
 node<user>* user_service::get_user_by_id(std::string id) {
     return user_index.find(id);
 }
+
+linked_list<user> user_service::get_all_users() const {
+    return user_list;
+}
+
+linked_list<user> user_service::filter_users(std::string id_kw, std::string name_kw, std::string role_kw) const {
+    linked_list<user> result;
+    node<user>* curr = user_list.get_head();
+
+    while (curr != nullptr) {
+        user u = curr->get_data();
+        bool match = true;
+
+        if (!id_kw.empty() && !search_algo::contains(u.get_id(), id_kw)) match = false;
+        if (!name_kw.empty() && !search_algo::contains(u.get_name(), name_kw)) match = false;
+        if (!role_kw.empty() && !search_algo::contains(u.get_role(), role_kw)) match = false;
+
+        if (match) {
+            result.push_back(u);
+        }
+        curr = curr->get_next();
+    }
+    return result;
+}

@@ -54,4 +54,7 @@ public:
 
     void cascade_book_id(const std::string& old_id, const std::string& new_id);
     void cascade_user_id(const std::string& old_id, const std::string& new_id);
+
+    linked_list<borrow> get_all_borrows() const;
+    linked_list<borrow> filter_borrows(std::string id_kw, std::string book_kw, std::string user_kw, std::string status_kw) const;
 };

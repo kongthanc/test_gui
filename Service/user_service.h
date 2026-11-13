@@ -38,4 +38,7 @@ public:
     // 4. Nhóm Tra cứu
     node<user>* get_user_by_id(std::string id);
     void display_all();
+    //
+    linked_list<user> get_all_users() const;
+    linked_list<user> filter_users(std::string id_kw, std::string name_kw, std::string role_kw) const;
 };
