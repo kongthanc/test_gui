@@ -30,7 +30,7 @@ b029;Lịch sử;d2
 b030;Lịch sử;d2
 b031;Lịch sử;d2
 b032;Kinh tế;e1
-b033;Kinh tế;e1
+B033;Kinh tế;e1
 b034;Kinh tế;e1
 b035;Kinh tế;e1
 b036;Tâm lý;e3
