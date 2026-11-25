@@ -28,7 +28,6 @@ public:
 
     // 2. Nghiệp vụ Xác thực & Phân quyền (Hỗ trợ Admin, Manager, User)
     user* login(std::string id, std::string password);
-    bool check_permission_level(user* u, std::string required_role);
 
     // 3. Nhóm Nghiệp vụ CRUD
     bool add_user(user new_user);
@@ -37,7 +36,7 @@ public:
 
     // 4. Nhóm Tra cứu
     node<user>* get_user_by_id(std::string id);
-    void display_all();
+
     //
     linked_list<user> get_all_users() const;
     linked_list<user> filter_users(std::string id_kw, std::string name_kw, std::string role_kw) const;

@@ -64,18 +64,6 @@ user* user_service::login(std::string id, std::string password) {
     return nullptr; // Sai mật khẩu
 }
 
-// --- Kiểm tra phân quyền (Hỗ trợ Manager > Admin > User) ---
-bool user_service::check_permission_level(user* u, std::string required_role) {
-    if (u == nullptr) return false;
-    
-    std::string role = u->get_role();
-    if (role == "manager") return true; // Manager có quyền tối cao
-    if (role == "admin" && (required_role == "admin" || required_role == "user")) return true;
-    if (role == "user" && required_role == "user") return true;
-
-    return false;
-}
-
 // --- 4. THÊM NGƯỜI DÙNG MỚI ---
 bool user_service::add_user(user new_user) {
     if (user_index.find(new_user.get_id()) != nullptr) {

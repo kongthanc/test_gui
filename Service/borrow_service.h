@@ -36,7 +36,6 @@ public:
     node<borrow>* get_borrow_by_id(std::string id);
     linked_list<borrow> get_borrows_by_user(std::string user_id, bool active_only);
     linked_list<borrow> filter_borrows_by_date(date start_date, date end_date);
-    void display_all();
 
     bool is_book_borrowed(std::string book_id) const;
     bool has_active_borrows(std::string user_id) const;
@@ -47,7 +46,7 @@ public:
     int count_borrows_by_book(std::string book_id) const;
 
     // --- HOÀN TÁC PHIẾU MƯỢN ---
-    bool undo_delete_borrow(borrow old_borrow, book_service& b_service);
+    bool undo_delete_borrow(borrow old_borrow);
     bool undo_create_borrow(std::string borrow_id, book_service& b_service);
 
     linked_list<borrow> get_borrows_by_book(std::string book_id) const;

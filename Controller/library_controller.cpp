@@ -24,18 +24,6 @@ void library_controller::load_requests() {
     std::ifstream file(request_file);
     if (!file.is_open()) return;
 
-    auto safe_parse_date = [](const std::string& str) -> date {
-        int d = 1, m = 1, y = 2026;
-        char s1 = '/', s2 = '/';
-        std::stringstream ss_d(search_algo::trim(str));
-        if (ss_d >> d >> s1 >> m >> s2 >> y) {
-            try {
-                return date(d, m, y);
-            } catch (...) {}
-        }
-        return date(1, 1, 2026);
-    };
-
     std::string line;
     while (std::getline(file, line)) {
         if (!line.empty() && line.back() == '\r') line.pop_back();
@@ -57,8 +45,8 @@ void library_controller::load_requests() {
         if (req_id.empty() || b_id.empty() || u_id.empty()) continue;
         if (status.empty()) status = "Cho duyet";
 
-        date b_date = safe_parse_date(b_date_str);
-        date d_date = safe_parse_date(due_date_str);
+        date b_date = file_helper::parse_date(b_date_str);
+        date d_date = file_helper::parse_date(due_date_str);
         if (d_date < b_date) d_date = b_date;
 
         borrow req(req_id, b_id, u_id, b_date, d_date, status);
@@ -762,7 +750,7 @@ int library_controller::get_user_active_borrow_count(std::string user_id) const 
 }
 
 linked_list<book> library_controller::filter_books(std::string title, std::string author, std::string category) {
-    return b_service.filter_books(title, author, category, 0);
+    return b_service.filter_books(title, author, category);
 }
 
 linked_list<book> library_controller::get_recommended_books(std::string author, std::string category, std::string exclude_book_id) {
@@ -846,7 +834,7 @@ std::string library_controller::get_hot_category() {
 // HOÀN TÁC (UNDO)
 bool library_controller::can_undo_book() const { return !book_undo_stack.empty(); }
 
-bool library_controller::undo_last_book_action(std::string& out_message) {
+bool library_controller::undo_book_action(std::string& out_message) {
     if (book_undo_stack.empty()) {
         out_message = "Không có thao tác sách nào trong Stack để hoàn tác!";
         return false;
@@ -919,10 +907,6 @@ bool library_controller::undo_last_book_action(std::string& out_message) {
         return true;
     }
     return false;
-}
-
-bool library_controller::undo_book_action(std::string& out_message) {
-    return undo_last_book_action(out_message);
 }
 
 bool library_controller::can_undo_user() const { return !user_undo_stack.empty(); }
@@ -1006,7 +990,7 @@ bool library_controller::undo_borrow_action(std::string& out_message) {
             return true;
         }
     } else if (last.get_action_type() == "DELETE") {
-        success = br_service.undo_delete_borrow(last.get_backup_data(), b_service);
+        success = br_service.undo_delete_borrow(last.get_backup_data());
         if (success) {
             borrow_undo_stack.pop();
             out_message = "Đã hoàn tác: Khôi phục phiếu mượn vừa xóa [" + last.get_target_id() + "]";

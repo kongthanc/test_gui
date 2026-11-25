@@ -24,20 +24,8 @@ void borrow_service::parse_line(std::string line, borrow& b) {
     std::getline(ss, due_date_str, ';');
     std::getline(ss, status, ';');
 
-    auto safe_parse_date = [](const std::string& str) -> date {
-        int d = 1, m = 1, y = 2026;
-        char s1 = '/', s2 = '/';
-        std::stringstream ss_d(search_algo::trim(str));
-        if (ss_d >> d >> s1 >> m >> s2 >> y) {
-            try {
-                return date(d, m, y);
-            } catch (...) {}
-        }
-        return date(1, 1, 2026);
-    };
-
-    date borrow_date = safe_parse_date(b_date_str);
-    date due_date = safe_parse_date(due_date_str);
+    date borrow_date = file_helper::parse_date(b_date_str);
+    date due_date = file_helper::parse_date(due_date_str);
     if (due_date < borrow_date) {
         due_date = borrow_date;
     }
@@ -337,7 +325,7 @@ void borrow_service::log_rejected_request(borrow b) {
 // --- 8. HOÀN TÁC TRẢ SÁCH / XÓA PHIẾU ---
 // Khi hoàn tác xóa, ta phải phục hồi phiếu về trạng thái "Đã trả" (vì chỉ xóa được khi đã trả)
 // Nên KHÔNG cần trừ đi 1 số lượng sách trong kho (vì sách đang nằm trong kho rồi)
-bool borrow_service::undo_delete_borrow(borrow old_borrow, book_service& b_service) {
+bool borrow_service::undo_delete_borrow(borrow old_borrow) {
     if (borrow_index.find(old_borrow.get_id()) != nullptr) return false;
 
     borrow_list.push_back(old_borrow);

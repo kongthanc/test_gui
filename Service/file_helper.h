@@ -1,13 +1,28 @@
 #pragma once
 #include <fstream>
 #include <string>
+#include <sstream>
 #include <filesystem>
 #include <cstdio>
 #include "../Structure/linked_list.h"
 #include "../Algorithm/search_algo.h"
+#include "../Model/date.h"
 
 class file_helper {
 public:
+    // Thêm vào class file_helper (Service/file_helper.h)
+    static date parse_date(const std::string& str) {
+        int d = 1, m = 1, y = 2026;
+        char s1 = '/', s2 = '/';
+        std::stringstream ss(search_algo::trim(str));
+        if (ss >> d >> s1 >> m >> s2 >> y) {
+            try {
+                return date(d, m, y);
+            } catch (...) {}
+        }
+        return date(1, 1, 2026);
+    }
+
     static std::string sanitize(std::string text) {
         for (char& c : text) {
             if (c == ';' || c == '\n' || c == '\r') {

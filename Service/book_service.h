@@ -36,12 +36,10 @@ public:
     // 3. Nhóm Tra cứu & Cấu trúc
     node<book>* get_book_by_id(std::string id);
     linked_list<book> search_books(std::string keyword);
-    linked_list<book> get_recommended_books(std::string author, std::string category, std::string exclude_book_id);
     
     // Hàm truyền con trỏ hàm so sánh để Sort (VD: cmp_by_year, cmp_by_title)
     void sort_books(bool (*cmp)(book, book)); 
-    void display_all();
-
+ 
     // Lọc kết hợp nhiều tiêu chí (truyền chuỗi rỗng "" hoặc year = 0 nếu bỏ qua tiêu chí đó)
-    linked_list<book> filter_books(std::string title_kw, std::string author_kw, std::string category_kw, int year = 0);
+    linked_list<book> filter_books(std::string title_kw, std::string author_kw, std::string category_kw);
 };

@@ -19,26 +19,11 @@ namespace
     const int CONTENT_X = 305;
     const int CONTENT_W = 890;
     const int ROWS_PER_PAGE = 6;
-    const int BOOKS_PER_PAGE = 4;
     const int SUGGESTIONS_PER_PAGE = 4;
 
     Color page_background = {245, 247, 251, 255};
     Color panel_background = {255, 255, 255, 255};
     Color sidebar_background = {235, 239, 246, 255};
-
-    void draw_panel()
-    {
-        float extra_x = ui_layout::offset().x / ui_layout::scale();
-        float extra_y = ui_layout::offset().y / ui_layout::scale();
-        DrawRectangleRounded(
-            {(float)CONTENT_X, 102.0f, (float)CONTENT_W, 578.0f},
-            0.03f, 8, panel_background);
-
-        // Kéo dãn khung trắng tràn ra lấp đầy viền
-        DrawRectangleRounded(
-            {(float)CONTENT_X, 102.0f, (float)CONTENT_W + extra_x, 578.0f + extra_y},
-            0.03f, 8, panel_background);
-    }
 
     void draw_table_header(const char *const *headers, const int *columns,
                            int count, int y)
@@ -866,7 +851,7 @@ void library_gui::draw_books(const std::string &role, bool user_search)
         if (draw_button({CONTENT_X + 150, 220, 110, 36}, "Hoàn tác", PURPLE))
         {
             std::string msg;
-            bool ok = controller.undo_last_book_action(msg);
+            bool ok = controller.undo_book_action(msg);
             set_message(msg, !ok);
             need_book_refresh = true;
             list_page = 0;
@@ -1139,59 +1124,6 @@ void library_gui::draw_book_form(bool editing)
     }
 }
 
-void library_gui::draw_book_delete()
-{
-    DrawText("Xóa sách", CONTENT_X + 25, 120, 30, DARKBLUE);
-    draw_back_button();
-    draw_input({360, 220, 420, 46}, "Mã sách cần xóa", field_a, sizeof(field_a));
-
-    if (draw_button({460, 315, 200, 48}, "Xóa sách", RED))
-    {
-        if (is_blank(field_a))
-        {
-            set_message("Nhập mã sách cần xóa.", true);
-            return;
-        }
-        node<book> *found = controller.get_book_by_id(field_a);
-        if (found == nullptr)
-        {
-            set_message("Không tìm thấy mã sách.", true);
-            return;
-        }
-
-        std::string id = field_a;
-        if (controller.has_pending_request_for_book(id))
-        {
-            set_message("Không thể xóa sách vì còn yêu cầu mượn đang chờ duyệt.", true);
-            return;
-        }
-        if (controller.is_book_borrowed(id))
-        {
-            set_message("Không thể xóa sách vì đang có người mượn hoặc chưa trả.", true);
-            return;
-        }
-        std::string title = found->get_data().get_title();
-        ask_confirm("Xác nhận xóa sách",
-                    "Bạn có chắc chắn muốn xóa sách này?\n"
-                    "Mã sách: " +
-                        id + "\n"
-                             "Tên sách: " +
-                        title,
-                    "Xóa sách", RED,
-                    [this, id]()
-                    {
-                        if (controller.delete_book(id))
-                        {
-                            set_message("Đã xóa sách.");
-                            clear_fields();
-                        }
-                        else
-                        {
-                            set_message("Không thể xóa sách. Vui lòng kiểm tra lại dữ liệu.", true);
-                        }
-                    });
-    }
-}
 void library_gui::draw_borrows()
 {
     DrawText("Quản lý phiếu mượn", CONTENT_X + 25, 118, 28, DARKBLUE);
@@ -1378,64 +1310,6 @@ void library_gui::draw_borrow_create()
                         set_message(msg, true); // Hiển thị nguyên nhân chi tiết
                     }
                 });
-}
-
-void library_gui::draw_borrow_return(bool deleting)
-{
-    DrawText(deleting ? "Xóa phiếu mượn" : "Xác nhận trả sách",
-             CONTENT_X + 25, 120, 30, DARKBLUE);
-    draw_back_button();
-
-    draw_input({360, 220, 420, 46}, "Mã phiếu mượn", field_a, sizeof(field_a));
-    const char *label = deleting ? "Xóa phiếu" : "Xác nhận trả";
-    Color color = deleting ? RED : ORANGE;
-
-    if (!draw_button({460, 315, 200, 48}, label, color))
-        return;
-
-    if (is_blank(field_a))
-    {
-        set_message("Nhập mã phiếu mượn.", true);
-        return;
-    }
-
-    std::string id = field_a;
-    if (deleting)
-    {
-        ask_confirm("Xác nhận xóa phiếu mượn",
-                    "Bạn có chắc chắn muốn xóa phiếu mượn\n" + id + " không?",
-                    "Xóa phiếu", RED,
-                    [this, id]()
-                    {
-                        if (controller.delete_borrow(id))
-                        {
-                            set_message("Đã xóa phiếu mượn.");
-                            clear_fields();
-                        }
-                        else
-                        {
-                            set_message("Không xóa được. Phiếu phải tồn tại và sách đã trả.", true);
-                        }
-                    });
-    }
-    else
-    {
-        ask_confirm("Xác nhận trả sách",
-                    "Xác nhận độc giả đã trả sách\ncho phiếu mượn " + id + "?",
-                    "Xác nhận trả", ORANGE,
-                    [this, id]()
-                    {
-                        if (controller.return_book(id))
-                        {
-                            set_message("Đã xác nhận trả sách.");
-                            clear_fields();
-                        }
-                        else
-                        {
-                            set_message("Không tìm thấy phiếu hoặc sách đã được trả.", true);
-                        }
-                    });
-    }
 }
 
 void library_gui::draw_requests()
@@ -1686,7 +1560,7 @@ void library_gui::draw_shifts(const std::string &role)
         ++list_page;
     draw_paging_hint(list_page, total, paging_y + 8, ROWS);
 }
-void library_gui::draw_shift_form(bool cancelling, bool deleting)
+void library_gui::draw_shift_form()
 {
     DrawText("Đăng ký ca trực", CONTENT_X + 25, 120, 30, DARKBLUE);
     draw_back_button();
@@ -1975,77 +1849,6 @@ void library_gui::draw_user_form(bool editing)
                         }
                     });
     }
-}
-
-void library_gui::draw_user_delete()
-{
-    DrawText("Xóa tài khoản", CONTENT_X + 25, 120, 30, DARKBLUE);
-    draw_back_button();
-    draw_input({360, 220, 420, 46}, "Mã tài khoản cần xóa",
-               field_a, sizeof(field_a));
-
-    if (!draw_button({460, 315, 210, 48}, "Xóa tài khoản", RED))
-        return;
-
-    if (is_blank(field_a))
-    {
-        set_message("Nhập mã tài khoản cần xóa.", true);
-        return;
-    }
-    node<user> *found = controller.get_user_by_id(field_a);
-    if (found == nullptr)
-    {
-        set_message("Không tìm thấy tài khoản.", true);
-        return;
-    }
-    user *current_user = controller.get_current_user();
-    if (current_user != nullptr && current_user->get_id() == field_a)
-    {
-        set_message("Không thể xóa tài khoản đang đăng nhập.", true);
-        return;
-    }
-    if (controller.has_pending_request_for_user(field_a))
-    {
-        set_message("Không thể xóa tài khoản vì còn yêu cầu mượn đang chờ duyệt.", true);
-        return;
-    }
-    if (controller.has_overdue_borrows(field_a))
-    {
-        set_message("Không thể xóa tài khoản vì còn sách quá hạn chưa trả.", true);
-        return;
-    }
-    if (controller.has_active_borrows(field_a))
-    {
-        set_message("Không thể xóa tài khoản vì còn sách đang mượn chưa trả.", true);
-        return;
-    }
-    if (controller.has_user_shifts(field_a))
-    {
-        set_message("Không thể xóa tài khoản vì tài khoản vẫn có ca trực.", true);
-        return;
-    }
-
-    std::string id = field_a;
-    std::string name = found->get_data().get_name();
-    ask_confirm("Xác nhận xóa tài khoản",
-                "Bạn có chắc chắn muốn xóa tài khoản này?\n"
-                "Mã tài khoản: " +
-                    id + "\n"
-                         "Họ và tên: " +
-                    name,
-                "Xóa tài khoản", RED,
-                [this, id]()
-                {
-                    if (controller.delete_user(id))
-                    {
-                        set_message("Đã xóa tài khoản.");
-                        clear_fields();
-                    }
-                    else
-                    {
-                        set_message("Không thể xóa tài khoản. Vui lòng kiểm tra lại dữ liệu.", true);
-                    }
-                });
 }
 
 void library_gui::draw_shelf()
@@ -2964,7 +2767,7 @@ void library_gui::draw(const std::string &role)
         draw_shifts(role);
         break;
     case SHIFT_REGISTER:
-        draw_shift_form(false, false);
+        draw_shift_form();
         break;
     case SALARY:
         draw_salary(role);

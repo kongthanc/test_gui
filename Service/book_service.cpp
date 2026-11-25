@@ -116,48 +116,6 @@ linked_list<book> book_service::search_books(std::string keyword) {
     return result;
 }
 
-linked_list<book> book_service::get_recommended_books(
-    std::string author, std::string category, std::string exclude_book_id) {
-    linked_list<book> result;
-
-    // Ưu tiên sách cùng tác giả.
-    node<book>* current = book_list.get_head();
-    while (current != nullptr) {
-        book item = current->get_data();
-        if (item.get_id() != exclude_book_id &&
-            !author.empty() && item.get_author() == author) {
-            result.push_back(item);
-        }
-        current = current->get_next();
-    }
-
-    // Bổ sung sách cùng thể loại, không thêm trùng sách đã có.
-    current = book_list.get_head();
-    while (current != nullptr) {
-        book item = current->get_data();
-        bool already_added = false;
-
-        node<book>* added = result.get_head();
-        while (added != nullptr) {
-            if (added->get_data().get_id() == item.get_id()) {
-                already_added = true;
-                break;
-            }
-            added = added->get_next();
-        }
-
-        if (item.get_id() != exclude_book_id &&
-            !category.empty() &&
-            item.get_category() == category &&
-            !already_added) {
-            result.push_back(item);
-        }
-        current = current->get_next();
-    }
-
-    return result;
-}
-
 // --- 8. SẮP XẾP BẰNG MERGE SORT ---
 void book_service::sort_books(bool (*cmp)(book, book)) {
     node<book>* head_ptr = book_list.get_head();    
@@ -209,7 +167,7 @@ void book_service::parse_line(std::string line, book& b) {
     b = book(id, title, author, category, quantity, year);
 }
 
-linked_list<book> book_service::filter_books(std::string title_kw, std::string author_kw, std::string category_kw, int year) {
+linked_list<book> book_service::filter_books(std::string title_kw, std::string author_kw, std::string category_kw) {
     linked_list<book> result;
     node<book>* curr = book_list.get_head();
 
@@ -220,8 +178,7 @@ linked_list<book> book_service::filter_books(std::string title_kw, std::string a
         if (!title_kw.empty() && !search_algo::contains(b.get_title(), title_kw)) match = false;
         if (!author_kw.empty() && !search_algo::contains(b.get_author(), author_kw)) match = false;
         if (!category_kw.empty() && !search_algo::contains(b.get_category(), category_kw)) match = false;
-        if (year > 0 && b.get_year() != year) match = false;
-
+        
         if (match) {
             result.push_back(b);
         }

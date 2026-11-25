@@ -122,7 +122,6 @@ public:
 
     // ================= 8. HOÀN TÁC ĐA ĐỐI TƯỢNG (UNDO STACK) =================
     bool can_undo_book() const;
-    bool undo_last_book_action(std::string& out_message);
     bool undo_book_action(std::string& out_message);
 
     bool can_undo_user() const;

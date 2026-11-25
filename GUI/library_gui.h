@@ -106,21 +106,18 @@ private:
     void draw_dashboard(const std::string& role);
     void draw_books(const std::string& role, bool user_search);
     void draw_book_form(bool editing);
-    void draw_book_delete();
 
     void draw_borrows();
     void draw_borrow_create();
-    void draw_borrow_return(bool deleting);
     void draw_requests();
     void draw_borrow_filter();
 
     void draw_shifts(const std::string& role);
-    void draw_shift_form(bool cancelling, bool deleting);
+    void draw_shift_form();
     void draw_salary(const std::string& role);
 
     void draw_users();
     void draw_user_form(bool editing);
-    void draw_user_delete();
     void draw_shelf();
 
     void draw_user_request();
