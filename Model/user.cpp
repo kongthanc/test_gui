@@ -1,10 +1,8 @@
-
 #include "user.h"
 
 using namespace std;
 
 void user::update_permission_strategy() {
-    delete permission_strategy;
     permission_strategy = permission_factory::create(this->role);
 }
 
@@ -14,7 +12,7 @@ user::user() : library_entity(""), name(""), password(""), role("user"), permiss
 
 user::user(string id, string name, string password, string role) 
     : library_entity(id), name(name), password(password), role(role), permission_strategy(nullptr) {
-    update_permission_strategy();
+    update_permission_strategy();   
 }
 
 user::user(const user& other) 
@@ -33,10 +31,6 @@ user& user::operator=(const user& other) {
     return *this;
 }
 
-user::~user() {
-    delete permission_strategy;
-}
-
 string user::get_name() const { return name; }
 string user::get_password() const { return password; }
 string user::get_role() const { return role; }
@@ -46,16 +40,6 @@ void user::set_password(string password) { this->password = password; }
 void user::set_role(string role) { 
     this->role = role; 
     update_permission_strategy();
-}
-
-void user::display_role_menu() const {
-    if (permission_strategy != nullptr) {
-        permission_strategy->show_menu(this->name);
-    }
-}
-
-int user::get_max_menu_option() const {
-    return (permission_strategy != nullptr) ? permission_strategy->get_max_menu_choice() : 0;
 }
 
 bool user::has_user_management_privilege() const {

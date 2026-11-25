@@ -8,12 +8,12 @@ protected:
     std::string id;
 
 public:
-    library_entity() : id("") {}
-    library_entity(std::string id) : id(id) {}
-    virtual ~library_entity() {}
+    library_entity();
+    library_entity(std::string id);
+    virtual ~library_entity();
 
-    std::string get_id() const { return id; }
-    void set_id(std::string id) { this->id = id; }  
+    std::string get_id() const;
+    void set_id(std::string id);
 
     // Các phương thức thuần ảo (Pure Virtual Functions) bắt buộc lớp con Override
     virtual std::string get_entity_type() const = 0;

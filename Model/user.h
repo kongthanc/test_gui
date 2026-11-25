@@ -1,4 +1,3 @@
-
 #pragma once
 #include <string>
 #include <iostream>
@@ -10,7 +9,7 @@ private:
     std::string name;
     std::string password;
     std::string role;
-    role_permission* permission_strategy; // Con trỏ Đa hình (Strategy Pattern)
+    const role_permission* permission_strategy;; // Con trỏ Đa hình (Strategy Pattern)
 
     void update_permission_strategy();
 
@@ -19,7 +18,7 @@ public:
     user(std::string id, std::string name, std::string password, std::string role);
     user(const user& other);
     user& operator=(const user& other);
-    virtual ~user();
+    virtual ~user() = default;
 
     std::string get_name() const;
     std::string get_password() const;
@@ -29,9 +28,7 @@ public:
     void set_password(std::string password);
     void set_role(std::string role);
 
-    // Các hành vi Đa hình (Polymorphic Dispatch)
-    void display_role_menu() const;
-    int get_max_menu_option() const;
+    //Đa hình (Polymorphic Dispatch)
     bool has_user_management_privilege() const;
 
     // Ghi đè (Override) hàm thuần ảo từ lớp trừu tượng library_entity

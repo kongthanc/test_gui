@@ -1,49 +1,18 @@
 #pragma once
 #include <fstream>
 #include <string>
-#include <sstream>
 #include <filesystem>
 #include <cstdio>
 #include "../Structure/linked_list.h"
-#include "../Algorithm/search_algo.h"
 #include "../Model/date.h"
 
 class file_helper {
 public:
-    // Thêm vào class file_helper (Service/file_helper.h)
-    static date parse_date(const std::string& str) {
-        int d = 1, m = 1, y = 2026;
-        char s1 = '/', s2 = '/';
-        std::stringstream ss(search_algo::trim(str));
-        if (ss >> d >> s1 >> m >> s2 >> y) {
-            try {
-                return date(d, m, y);
-            } catch (...) {}
-        }
-        return date(1, 1, 2026);
-    }
+    static date parse_date(const std::string& str);
+    static std::string sanitize(std::string text);
+    static bool ensure_parent_dir(const std::string& filename);
 
-    static std::string sanitize(std::string text) {
-        for (char& c : text) {
-            if (c == ';' || c == '\n' || c == '\r') {
-                c = ' ';
-            }
-        }
-        return search_algo::trim(text);
-    }
-    
-    static bool ensure_parent_dir(const std::string& filename) {
-        try {
-            std::filesystem::path p(filename);
-            if (p.has_parent_path() && !p.parent_path().empty()) {
-                std::filesystem::create_directories(p.parent_path());
-            }
-            return true;
-        } catch (...) {
-            return false;
-        }
-    }
-     // Đơn nhiệm GHI: Chỉ làm duy nhất 1 việc là ghi danh sách ra file
+    // Đơn nhiệm GHI: Ghi danh sách ra file
     template <typename T>
     static bool save_list_to_file(const std::string& filename, const linked_list<T>& list) {
         if (!ensure_parent_dir(filename)) return false;

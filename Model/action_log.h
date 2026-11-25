@@ -1,6 +1,5 @@
 #pragma once
 #include <string>
-#include "library_entity.h"
 
 // Class Template Action Log dùng chung cho mọi đối tượng T (book, user, borrow...)
 template <typename T>

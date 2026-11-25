@@ -37,13 +37,8 @@ void shift_service::parse_line(std::string line, shift& s) {
     session = search_algo::to_lower(search_algo::trim(session));
 
     // 2. Khởi tạo giá trị mặc định để tránh số rác từ bộ nhớ RAM
-    int d = 1, m = 1, y = 2026;
-    char slash1 = '/', slash2 = '/';
-    std::stringstream ss_d(date_str);
-    if (!(ss_d >> d >> slash1 >> m >> slash2 >> y)) {
-        d = 1; m = 1; y = 2026;
-    }
-    date shift_date(d, m, y);
+    date shift_date = file_helper::parse_date(date_str);
+    if (!shift_date.is_valid() || (session != "sang" && session != "chieu")) return;
 
     s = shift(shift_date, session);
 
@@ -69,6 +64,7 @@ bool shift_service::load_data() {
         
         shift s;
         parse_line(line, s);
+        if (s.get_session().empty()) continue;
         
         shift_list.push_back(s);
         node<shift>* new_node = shift_list.get_tail(); 
