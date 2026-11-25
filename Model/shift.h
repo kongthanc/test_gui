@@ -1,4 +1,3 @@
-
 #pragma once
 #include <string>
 #include "date.h" // Nhúng class date vào để quản lý ngày thực tế

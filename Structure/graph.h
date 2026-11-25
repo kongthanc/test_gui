@@ -1,4 +1,3 @@
-
 #pragma once
 #include "linked_list.h" // Tận dụng lại chính DSLK đôi bạn đã code
 

@@ -1,4 +1,3 @@
-
 #include <iostream>
 #include "shift_service.h"
 #include "../Algorithm/search_algo.h"

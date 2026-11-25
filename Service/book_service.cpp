@@ -1,4 +1,3 @@
-
 #include "book_service.h"
 
 book_service::book_service(std::string filename) {

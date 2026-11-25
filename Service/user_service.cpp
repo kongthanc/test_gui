@@ -1,4 +1,3 @@
-
 #include "user_service.h"
 
 user_service::user_service(std::string filename) {

@@ -1,4 +1,3 @@
-
 #include "date.h"
 #include <stdexcept>
 

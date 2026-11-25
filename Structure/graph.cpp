@@ -1,4 +1,3 @@
-
 #include "graph.h"
 
 template <typename t>

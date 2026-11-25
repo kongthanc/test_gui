@@ -1,4 +1,3 @@
-
 #include "hash_table.h"
 
 // --- Khởi tạo Node phụ ---

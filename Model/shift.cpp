@@ -1,4 +1,3 @@
-
 #include "shift.h"
 #include <sstream>
 

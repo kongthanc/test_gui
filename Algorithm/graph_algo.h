@@ -1,4 +1,3 @@
-
 #pragma once
 #include "../Structure/graph.h"
 #include "../Structure/queue.h"

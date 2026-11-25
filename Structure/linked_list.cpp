@@ -1,4 +1,3 @@
-
 #include "linked_list.h"
 
 template <typename t>

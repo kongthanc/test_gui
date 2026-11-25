@@ -1,4 +1,3 @@
-
 #include "stack.h"
 
 template <typename t>
