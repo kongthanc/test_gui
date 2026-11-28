@@ -387,7 +387,7 @@ void library_gui::draw_confirm_dialog()
     // Thu thập bàn phím sau khi mở khóa đầu vào của hộp thoại.
     collect_text_input();
 
-    DrawRectangle(0, 0, WINDOW_W, WINDOW_H, {0, 0, 0, 130});
+    DrawRectangle(-3000, -3000, WINDOW_W + 6000, WINDOW_H + 6000, {0, 0, 0, 130});
 
     Rectangle box = {
         340, 200, 540,
@@ -2147,13 +2147,8 @@ void library_gui::draw_notifications()
             360, y + 8, 18, DARKBLUE);
 
         // Rút gọn nội dung trên danh sách, chỉ xem đầy đủ khi mở chi tiết.
-        std::string content = item.get_content();
-
-        if (content.size() > 95)
-        {
-            content = content.substr(0, 92) + "...";
-        }
-
+        std::string content = truncate_utf8(item.get_content(), 80);
+        
         DrawText(
             content.c_str(),
             360, y + 34, 15, DARKGRAY);
@@ -2226,7 +2221,7 @@ void library_gui::draw_notifications()
             box_w,
             box_h};
 
-        DrawRectangle(0, 0, (int)screen_w, (int)screen_h,
+        DrawRectangle(-3000, -3000, (int)screen_w + 6000, (int)screen_h + 6000,
                       {0, 0, 0, 130});
 
         DrawRectangleRounded(box, 0.05f, 10, WHITE);
@@ -2357,10 +2352,14 @@ void library_gui::draw_notifications()
             0.0f,
             std::min(notification_detail_scroll, max_scroll));
 
-        // Giới hạn vùng vẽ để chữ không tràn khỏi hộp thoại.
+        Vector2 sc_tl = GetWorldToScreen2D(
+            Vector2{view.x, view.y}, ui_layout::camera());
+        Vector2 sc_br = GetWorldToScreen2D(
+            Vector2{view.x + view.width, view.y + view.height}, ui_layout::camera());
+
         BeginScissorMode(
-            (int)view.x, (int)view.y,
-            (int)view.width, (int)view.height);
+            (int)sc_tl.x, (int)sc_tl.y,
+            (int)(sc_br.x - sc_tl.x), (int)(sc_br.y - sc_tl.y));
 
         for (int i = 0; i < (int)lines.size(); ++i)
         {
@@ -2378,6 +2377,8 @@ void library_gui::draw_notifications()
             (int)view.x,
             (int)(box.y + box.height - 75),
             15, GRAY);
+
+        input_locked = false;
 
         // Nút đóng luôn nằm ở giữa phía dưới hộp thoại.
         if (draw_button(
@@ -2409,7 +2410,7 @@ void library_gui::draw_book_detail_popup()
     book b = b_node->get_data();
 
     // Phủ lớp nền đen mờ
-    DrawRectangle(0, 0, WINDOW_W, WINDOW_H, Color{0, 0, 0, 140});
+    DrawRectangle(-3000, -3000, WINDOW_W + 6000, WINDOW_H + 6000, Color{0, 0, 0, 140});
 
     // Khung Popup chính
     Rectangle box = {
