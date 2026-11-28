@@ -259,6 +259,11 @@ void library_gui::reset()
     confirm_action = nullptr;
     confirm_error.clear();
     show_book_detail_popup = false;
+    notification_detail_open = false;
+    notification_detail_scroll = 0;
+    notification_detail_title.clear();
+    notification_detail_content.clear();
+    notification_detail_time.clear();
     detail_book_id.clear();
     detail_borrow_page = 1;
     user_book_popup = false;
@@ -540,8 +545,15 @@ bool library_gui::read_date(const char *text, date &value) const
 
 void library_gui::collect_text_input()
 {
-    if (input_locked || active_field == nullptr || active_field_capacity <= 1)
+    // Chưa chọn ô nhập nào: bỏ hết phím đã gõ để không bị "tồn" sang ô sau.
+    if (active_field == nullptr || active_field_capacity <= 1)
+    {
+        windows_text_input::input_event ignored;
+        while (windows_text_input::pop(ignored)) {}
         return;
+    }
+
+    if (input_locked) return;
 
     bool changed = false;
     bool control = IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL);
@@ -2148,7 +2160,7 @@ void library_gui::draw_notifications()
 
         // Rút gọn nội dung trên danh sách, chỉ xem đầy đủ khi mở chi tiết.
         std::string content = truncate_utf8(item.get_content(), 80);
-        
+
         DrawText(
             content.c_str(),
             360, y + 34, 15, DARKGRAY);
